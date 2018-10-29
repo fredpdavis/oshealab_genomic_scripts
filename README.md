@@ -72,20 +72,24 @@ R               running sleuth, and creating figures
 
 3. Look inside.
 
-Scripts are simple text files -- open them in a text editor
-and look at the commands that are being run. It's not complicated.
+    Scripts are simple text files -- open them in a text editor
+    and look at the commands that are being run. It's not complicated.
 
 4. Be skeptical.
 
-Don't over-interpret or take the results as immediately correct: lots of things
-can and do go wrong. Do you have positive controls? negative controls?
-Are you seeing the genes you expect? If something looks weird, it probably is.
+    Don't over-interpret or take the results as immediately correct: lots of
+    things can and do go wrong. Do you have positive and negative controls?
+    If something looks weird, it probably is.
 
 5. Be tidy.
+
     i. keep an organized directory structure.
+
     ii. don't use spaces or weird characters (asterisks, slashes, apostrophes,
        quotes, etc) in your sample names, condition names.
+
     iii. don't edit stuff unless you understand what you're doing.
+
     iv. Turn off your Mac's quote autocorrection. Apostrophes and quotes have
     specific meanings in scripts. By default, Mac's will often change these
     kinds of characters to curly quotes that will break the command -- this is
