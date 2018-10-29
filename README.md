@@ -103,7 +103,7 @@ This pipeline expects two text files as input.
       tissue, etc. this is useful for specifying the condition pairs you
       want to compare in the next file.
 
-    ```sh
+    ```
     flowcell	fastqName	sampleName
     ```
 
@@ -116,7 +116,7 @@ This pipeline expects two text files as input.
     - Samples can be specified by sampleName or by other features specified in
       the sample sheet
 
-    ```sh
+    ```
     celltype=Foxp3,tissue=lung	celltype=Foxp3,tissue=spleen
     ```
 
