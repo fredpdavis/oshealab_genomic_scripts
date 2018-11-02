@@ -1,0 +1,6 @@
+flowcell	fastqName	sampleName	cytokineStim
+test	in1.fq.gz	unstim_rep1	no
+test	in2.fq.gz	unstim_rep2	no
+test	in3.fq.gz       cytokineX_stim_1hr_rep1	cytokineX_1hr
+test	in4.fq.gz       cytokineX_stim_1hr_rep2	cytokineX_1hr
+

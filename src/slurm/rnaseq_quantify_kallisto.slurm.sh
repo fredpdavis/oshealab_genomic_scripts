@@ -1,5 +1,5 @@
 #!/bin/csh -v
-#SBATCH --cpus-per-task=2
+#SBATCH --cpus-per-task=8
 #SBATCH --ntasks-per-core=1
 #SBATCH --mem=10g
 #SBATCH -o slurm_out/rnaseq_quantify_kallisto.%A.%a.out
@@ -8,15 +8,17 @@
 #SBATCH --gres=lscratch:200
 #SBATCH --array=1-33
 
-set NUMCPU=2
-set SCRATCHDIR="/lscratch/$SLURM_JOBID"
-set BASEDIR="/data/davisfp/projects/bonelli.trth2"
+set NUMCPU=8
 
-set SAMPLEINFO_FN="$BASEDIR/metadata/bonelli_rna_samples.txt"
-set SAMPLE_OPTION="runBatch 20180831"
+set BASEDIR="/data/davisfp/projects/cytokineX"
+set SAMPLEINFO_FN="$BASEDIR/metadata/rnaseq_samples.txt"
+set SAMPLE_OPTION=""
+
+set SCRATCHDIR="/lscratch/$SLURM_JOBID"
 
 # Module load
 module load kallisto/0.42.4
+module load STAR/2.5.4a
 
 set SRCDIR="$BASEDIR/src"
 set names=( `perl $SRCDIR/perl/txt2tasklist.pl $SAMPLEINFO_FN sampleName $SAMPLE_OPTION` )
