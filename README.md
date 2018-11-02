@@ -118,11 +118,10 @@ You don't need to download these, as they are already installed on the NIH HPC
 and accessible through their very well maintained system of
 ['modules'](https://hpc.nih.gov/apps/modules.html)
 
-The programs were using accomodate many different options -- the scripts in this
-package use a particular incantation of these programs. As you get more
-comfortable with the analysis, look at the specific options used for each
-program, and read the program manuals to understand what each does and learn
-about other options you may want to try out.
+These programs offer many different options -- the scripts in this package use a
+particular incantation of these programs. As you get more comfortable with the
+analysis, look at the specific options used for each program, and read their
+manuals to understand what each does and what other options you may want to try.
 
 
 ### 0. Setup your project directory
@@ -180,12 +179,12 @@ using it to analyze your own data.
 
     For testing, I provide four small fastq files-- you can delete if you want.
 
-    ```
-    ls data/fastq/test
-
-    in1.fq.gz
-    in2.fq.gz
-    ```
+        ```
+        ls data/fastq/test
+    
+        in1.fq.gz
+        in2.fq.gz
+        ```
 
     These files often have a .fastq or .fq suffix, and are typically compressed
     by either gzip or bunzip, resulting in a further '.gz' or '.bz2' suffix.
@@ -206,14 +205,14 @@ using it to analyze your own data.
 
     - This package includes an example file listing the test samples
 
-    ```
-    > cat metadata/rnaseq_samples.txt
-    flowcell	fastqName	sampleName	cytokineStim
-    test	in1.fq.gz	unstim_rep1	no
-    test	in2.fq.gz	unstim_rep2	no
-    test	in3.fq.gz	cytokineX_stim_1hr_rep1	cytokineX_1hr
-    test	in4.fq.gz	cytokineX_stim_1hr_rep2	cytokineX_1hr
-    ```
+        ```
+        > cat metadata/rnaseq_samples.txt
+        flowcell	fastqName	sampleName	cytokineStim
+        test	in1.fq.gz	unstim_rep1	no
+        test	in2.fq.gz	unstim_rep2	no
+        test	in3.fq.gz	cytokineX_stim_1hr_rep1	cytokineX_1hr
+        test	in4.fq.gz	cytokineX_stim_1hr_rep2	cytokineX_1hr
+        ```
 
     - Edit this file to describe your samples. nano is an easy-to-use text
       editor: `nano metadata/rnaseq_samples.txt`
@@ -241,18 +240,18 @@ using it to analyze your own data.
     - Samples can be specified by sampleName or by other features specified in
       the sample sheet
 
-    ```
-    > cat metadata/rnaseq_comparisons.txt
-    cytokineStim=no	cytokineStim=cytokineX_1hr
-    ```
+        ```
+        > cat metadata/rnaseq_comparisons.txt
+        cytokineStim=no	cytokineStim=cytokineX_1hr
+        ```
 
     - If you want to specify your samples using more than one feature, use
     commas to express logical AND, and semicolon to express logical OR.
     AND's will be interpreted first.
 
-    ```
-    cytokineStim=no,cellType=CD4	cytokineStim=no,cellType=CD8
-    ```
+        ```
+        cytokineStim=no,cellType=CD4	cytokineStim=no,cellType=CD8
+        ```
 
 ### 2. Retrieve and prepare genome/gene information
 
