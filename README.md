@@ -203,14 +203,12 @@ using it to analyze your own data.
 
     - This package includes an example file listing the test samples
 
-        ```
         > cat metadata/rnaseq_samples.txt
         flowcell	fastqName	sampleName	cytokineStim
         test	in1.fq.gz	unstim_rep1	no
         test	in2.fq.gz	unstim_rep2	no
         test	in3.fq.gz	cytokineX_stim_1hr_rep1	cytokineX_1hr
         test	in4.fq.gz	cytokineX_stim_1hr_rep2	cytokineX_1hr
-        ```
 
     - Edit this file to describe your samples. nano is an easy-to-use text
       editor: `nano metadata/rnaseq_samples.txt`
