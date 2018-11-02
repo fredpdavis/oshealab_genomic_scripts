@@ -179,12 +179,10 @@ using it to analyze your own data.
 
     For testing, I provide four small fastq files-- you can delete if you want.
 
-        ```
         ls data/fastq/test
     
         in1.fq.gz
         in2.fq.gz
-        ```
 
     These files often have a .fastq or .fq suffix, and are typically compressed
     by either gzip or bunzip, resulting in a further '.gz' or '.bz2' suffix.
