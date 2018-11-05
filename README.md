@@ -178,7 +178,7 @@ options you may want to try.
 Now that you have a set of scripts and basic directory structure, you can start
 using it to analyze your own data.
 
-1. Get your FASTQ sequence files
+1. Get FASTQ sequence files
 
     For testing, I provide four small fastq files-- you can delete if you want.
 
@@ -201,26 +201,27 @@ using it to analyze your own data.
     named by sequencing run identifiers (if sequenced locally), or by author if
     the FASTQ comes from a published paper.
 
-2. Edit your sample sheet `metadata/rnaseq_samples.txt`
+2. Edit the sample sheet `metadata/rnaseq_samples.txt`
 
     - This is a tab-delimited text file. Make sure you use tab's, __NOT SPACES__
 
     - This package includes an example file listing the test samples
 
         > cat metadata/rnaseq_samples.txt
-        runID	fastqName	sampleName	cytokineStim
-        test	in1.fq.gz	unstim_rep1	no
-        test	in2.fq.gz	unstim_rep2	no
-        test	in3.fq.gz	cytokineX_stim_1hr_rep1	cytokineX_1hr
-        test	in4.fq.gz	cytokineX_stim_1hr_rep2	cytokineX_1hr
+        sampleID	sampleName	runID	fastqName	cytokineStim
+        r001	unstim_rep1	test	in1.fq.gz	no
+        r002	unstim_rep3	test	in2.fq.gz	no
+        r003	cytokineX_1hr_rep1	test	in3.fq.gz	cytokineX_1hr
+        r004	cytokineX_1hr_rep2	test	in4.fq.gz	cytokineX_1hr
 
     - Edit this file to describe your samples. nano is an easy-to-use text
       editor: `nano metadata/rnaseq_samples.txt`
 
-    - requires 3 fields:
-        1. runID
-        2. fastqName
-        3. sampleName
+    - requires 4 fields:
+        1. sampleID
+        2. sampleName
+        3. runID
+        4. fastqName
 
     - add additional columns to describe sample properties like celltype,
       tissue, etc. this is useful for specifying the condition pairs you
@@ -229,7 +230,7 @@ using it to analyze your own data.
     - expects to find fastq files in `data/fastq/<runID>/<fastqName>`
 
 
-3. Edit your comparisons file, listing pairs of conditions to compare:
+3. Edit the comparisons file, listing pairs of conditions to compare:
 
     - This is a tab-delimited text file. Make sure you use tab's, __NOT SPACES__
 
