@@ -32,22 +32,22 @@ Request your account [here](https://hpc.nih.gov/docs/accounts.html)
 
 2. Write everything down.
 
-    Meticulous notes are just as critical for computational work as it is for
-    experimental work.  I keep records in three ways:
+    Meticulous notes are just as critical for computational work as they are for
+    experimental work. I keep records in three ways:
     
-    1. Scripts are text files containing commands that will be run. Organizing
-       your analysis into scripts forces you to keep track of your analyses.
+    1. Scripts. These are text files containing the actual commands that perform
+    each analysis step. Scripts force you to keep track of your analyses.
  
-    2. README files -- If there is anything important to know or remember about
+    2. README files. If there is anything important to know or remember about
     what happened in a specific directory, I write it in a README text file
     that I keep in that specific directory.
  
-    3. Electronic lab notebook. I keep a chronological lab notebook made of one
-    text file per day ([mdlabbook](http://github.com/fredpdavis/mdlabbook). You
-    should use whatever system you are comfortable with, but I highly recommend
-    you keep eletronic notes. When you want to remember what commands you tried,
-    or what analysis you were working on Monday two weeks ago, you are unlikely
-    to remember accurately unless you can look back at notes.
+    3. Electronic lab notebook. I keep a chronological lab notebook made of
+    text file per day (see [mdlabbook](http://github.com/fredpdavis/mdlabbook).
+    You should use whatever system you are comfortable with, but I highly
+    recommend you keep eletronic notes. When you want to remember what commands
+    you tried, or what analysis you were working on Monday two weeks ago, you
+    are unlikely to remember accurately unless you can look back at notes.
 
 3. Look inside.
 
@@ -77,14 +77,16 @@ Request your account [here](https://hpc.nih.gov/docs/accounts.html)
     iii. don't edit stuff unless you understand what you're doing.
 
     iv. Turn off Mac autocorrect for quotes. Apostrophes and quotes have
-    specific meanings in scripts. By default, Mac's will often change these
+    specific meanings in scripts. By default, Macs will often change these
     kinds of characters to curly quotes that will break the command -- this is
-    a problem when eg, you try to copy and paste a command into the terminal
-    to test -- because the command line (or shell) doesn't like fancy quotes.
+    a problem when eg, you try to copy and paste a command into a script that
+    you are editing, or into the terminal to test a command.
 
-5. Trust no one (especially yourself!)
+5. Trust no one, especially yourself
 
-    This is of course an exaggeration, but be skeptical of all your results.
+    This is of course an exaggeration -- ultimately you are trusting multiple
+    layers of software that operate the sequencer through to the programs
+    that generate the figures you will intrepret. Be skeptical of all results.
     Don't over-interpret or assume your results are correct: lots of things can
     and do go wrong. Do you have positive and negative controls? If something
     looks weird, it probably is.
@@ -120,8 +122,9 @@ and accessible through their very well maintained system of
 
 These programs offer many different options -- the scripts in this package use a
 particular incantation of these programs. As you get more comfortable with the
-analysis, look at the specific options used for each program, and read their
-manuals to understand what each does and what other options you may want to try.
+analysis, look inside the scripts and study the specific options used for each
+program, and then read their manuals to understand what each does and what other
+options you may want to try.
 
 
 ### 0. Setup your project directory
@@ -183,6 +186,8 @@ using it to analyze your own data.
     
         in1.fq.gz
         in2.fq.gz
+        in3.fq.gz
+        in4.fq.gz
 
     These files often have a .fastq or .fq suffix, and are typically compressed
     by either gzip or bunzip, resulting in a further '.gz' or '.bz2' suffix.
@@ -192,10 +197,9 @@ using it to analyze your own data.
     [NCBI GEO](https://www.ncbi.nlm.nih.gov/geo/) if you want to re-process
     published data.
 
-    I suggest you store these in the `data/fastq/` directory in subdirectories
-    named by either flowcell (if sequenced locally), or by author if the
-    FASTQ comes from a published paper.
-
+    Store the sequence files in the `data/fastq/` directory in subdirectories
+    named by sequencing run identifiers (if sequenced locally), or by author if
+    the FASTQ comes from a published paper.
 
 2. Edit your sample sheet `metadata/rnaseq_samples.txt`
 
@@ -204,7 +208,7 @@ using it to analyze your own data.
     - This package includes an example file listing the test samples
 
         > cat metadata/rnaseq_samples.txt
-        flowcell	fastqName	sampleName	cytokineStim
+        runID	fastqName	sampleName	cytokineStim
         test	in1.fq.gz	unstim_rep1	no
         test	in2.fq.gz	unstim_rep2	no
         test	in3.fq.gz	cytokineX_stim_1hr_rep1	cytokineX_1hr
@@ -214,7 +218,7 @@ using it to analyze your own data.
       editor: `nano metadata/rnaseq_samples.txt`
 
     - requires 3 fields:
-        1. flowcell
+        1. runID
         2. fastqName
         3. sampleName
 
@@ -222,7 +226,7 @@ using it to analyze your own data.
       tissue, etc. this is useful for specifying the condition pairs you
       want to compare in the next file.
 
-    - expects to find fastq files in `data/fastq/<flowcell>/<fastqName>`
+    - expects to find fastq files in `data/fastq/<runID>/<fastqName>`
 
 
 3. Edit your comparisons file, listing pairs of conditions to compare:
@@ -260,7 +264,7 @@ this file.
 
     ```sh
     mkdir -p run/20181102.prepare_inputs
-    cp src/slurm/prepare_input_files.slurm.csh run/20181102.prepare_inputs
+    cp src/slurm/prepare_indices.slurm.csh run/20181102.prepare_inputs
     ```
 
 - Edit the script to specify the BASEDIR
@@ -273,9 +277,9 @@ this file.
 
     ```sh
     ssh biowulf.nih.gov
-    cd /data/davisfp/projects/cytokineX/20181102.prepare_inputs
+    cd /data/davisfp/projects/cytokineX/20181102.prepare_indices
     mkdir slurm_out
-    sbatch prepare_input_files.slurm.csh
+    sbatch prepare_indices.slurm.csh
     ```
 
 - To check if the job is complete, use the squeue command
@@ -298,8 +302,8 @@ step again if you just want to process additional samples.
 - Make a new directory and copy the next script there.
 
     ```sh
-    mkdir -p run/20181102.align_samples
-    cp src/slurm/align_samples.slurm.csh run/20181102.prepare_inputs
+    mkdir -p run/20181102.process_samples
+    cp src/slurm/process_rnaseq_samples.slurm.csh run/20181102.process_samples
     ```
 
 - Edit the script to specify the BASEDIR
@@ -335,9 +339,9 @@ step again if you just want to process additional samples.
 
     ```sh
     ssh biowulf.nih.gov
-    cd /data/davisfp/projects/cytokineX/20181102.align_samples
+    cd /data/davisfp/projects/cytokineX/20181102.process_samples
     mkdir slurm_out
-    sbatch align_samples.slurm.csh
+    sbatch process_rnaseq_samples.slurm.csh
     ```
 
 - Check job status with `squeue`; once the job is done, logoff biowulf
@@ -352,7 +356,7 @@ The next steps of identifying differentially expresed genes and creating figures
 is performed by an R script.
 
 Unlike the shell scripts that we submitted to the cluster, I like to keep only
-one R script, exactly where it sits in `src/R/basicRnaAnalysis.R`
+one R script, exactly where it sits in `src/R/basicRnaSeqAnalysis.R`
 
 Edit this script (as you feel comfortable) to adapt it and change figures, etc.
 
@@ -387,7 +391,7 @@ desktop or laptop.
 
     ```
     R
-    R> source("../../src/R/basicRnaAnalysis.R")
+    R> source("../../src/R/basicRnaSeqAnalysis.R")
     R> dat <- loadData()
     R> tx <- makeFigures(dat)
     ```
