@@ -373,7 +373,9 @@ sbatch process_rnaseq_samples.slurm.csh
 logout
 ```
 
-### 5. Create figures and tables
+### 5. Create figures and tables (__NOT YET__)
+
+__ NOTE THIS STEP IS NOT FINISHED YET __
 
 The next steps of identifying differentially expresed genes and creating figures
 is performed by an R script.
