@@ -1,4 +1,7 @@
+*.swp
+*.swo
 run/
+results/
 analysis/
 ENSEMBL.GRCm38.94
 kallisto_files.GRCm38.94

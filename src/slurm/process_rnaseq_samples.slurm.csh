@@ -29,31 +29,31 @@ set FASTQ=$fastqs[$SLURM_ARRAY_TASK_ID]
 ## LOAD PROGRAMS
 module load kallisto/0.44.0
 module load STAR/2.5.4a
-module load picard/1.119
+module load picard/2.17.11
 module load java/1.8.0_92
 module load R/3.5.0
 module load deeptools/3.1.2
 
-set PICARDSORT_BIN="java -jar $PICARD_JARPATH/SortSam.jar"
-set PICARDINDEX_BIN="java -jar $PICARD_JARPATH/BuildBamIndex.jar"
-set PICARDSTATS_BIN="java -jar $PICARD_JARPATH/CollectRnaSeqMetrics.jar"
+set PICARDSORT_BIN="java -jar $PICARDJAR SortSam"
+set PICARDINDEX_BIN="java -jar $PICARDJAR BuildBamIndex"
+set PICARDSTATS_BIN="java -jar $PICARDJAR CollectRnaSeqMetrics"
 
 ## SPECIFY INPUT FILES
 set ENSEMBL_GENOMEVER="GRCm38"
 set ENSEMBL_RELEASE="94"
 set EGR="${ENSEMBL_GENOMEVER}.${ENSEMBL_RELEASE}"
-set KALLISTO_INDEX="$BASEDIR/kallisto_files.$EGR/$EGR.kalisto_index"
-set STAR_INDEX="$BASEDIR/star_files.$EGR/$EGR.star_index"
-set UNCOMPR_GTF="$STARDIR/Mus_musculus.$GFR.gtf"
-set PICARD_REF_FLAT_FN="$BASEDIR/picard_files.$EGR/refFlat.$EGR.txt"
-
+set KALLISTO_INDEX="$BASEDIR/data/kallisto_files.$EGR/$EGR.kalisto_index"
+set STARDIR="$BASEDIR/data/star_files.$EGR"
+set STAR_INDEX="$STARDIR/$EGR.star_index"
+set UNCOMPR_GTF="$STARDIR/Mus_musculus.$EGR.ERCC92.gtf"
+set PICARD_REF_FLAT_FN="$BASEDIR/data/picard_files.$EGR/refFlat.$EGR.ERCC92.txt.gz"
 
 set FASTQ_FN="$BASEDIR/data/fastq/$RUNID/$FASTQ"
 
 ## OUTPUT DIRECTORIES
 set KALLISTO_OUTDIR="$BASEDIR/results/RNAseq/kallisto.$EGR/$SAMPLEID"
 set STAR_OUTDIR="$BASEDIR/results/RNAseq/star.$EGR/$SAMPLEID"
-set PICARDSTATS_OUTDIR="${BASEDIR}/results/RNAseq/picard_stats.star.$EGR/$SAMPLEID"
+set PICARDSTATS_OUTDIR="$BASEDIR/results/RNAseq/picard_stats.star.$EGR/$SAMPLEID"
 
 foreach T_OUTDIR ( $KALLISTO_OUTDIR $STAR_OUTDIR $PICARDSTATS_OUTDIR )
    if (! -e $T_OUTDIR) then
@@ -75,13 +75,13 @@ set PICARDSTATS_PDF_FN="${PICARDSTATS_OUTDIR}/${SAMPLEID}.picard_rnaseq_report.p
 
 ### PROGRAM OPTIONS
 set KALLISTO_OPTIONS="quant -t $NUMCPU -i $KALLISTO_INDEX --single -l 200 -s 30 -b 50 -o $KALLISTO_OUTDIR $FASTQ_FN"
-set STAR_OPTIONS="--genomeDir $STAR_INDEX --readFilesIn $FASTQ_FN --outSAMstrandField intronMotif --outFilterIntronMotifs RemoveNoncanonicalUnannotated --outFilterType BySJout --runThreadN $NUMCPU --outFileNamePrefix $STAR_OUTDIR/ --readFilesCommand zcat"
+set STAR_OPTIONS="--genomeDir $STAR_INDEX --readFilesIn $FASTQ_FN --outSAMtype BAM Unsorted --outSAMstrandField intronMotif --outFilterIntronMotifs RemoveNoncanonicalUnannotated --outFilterType BySJout --runThreadN $NUMCPU --outFileNamePrefix $STAR_OUTDIR/ --readFilesCommand zcat"
 
 set PICARDSORT_OPTIONS="I=$STAR_OUT_BAM_FN O=$STAR_OUT_SORTED_BAM_FN SO=coordinate"
 set PICARDINDEX_OPTIONS="I=$STAR_OUT_SORTED_BAM_FN O=$STAR_OUT_SORTED_BAI_FN"
-set PICARDSTATS_OPTIONS1="REF_FLAT=$PICARD_REF_FLAT_FN STRAND_SPECIFICITY=NONE INPUT=$STAR_OUT_SORTED_BAM_FN CHART_OUTPUT=$PICARDSTATS_PDF_FN OUTPUT=$PICARDSTATS_TXT_FN"
+set PICARDSTATS_OPTIONS="REF_FLAT=$PICARD_REF_FLAT_FN STRAND_SPECIFICITY=NONE INPUT=$STAR_OUT_SORTED_BAM_FN CHART_OUTPUT=$PICARDSTATS_PDF_FN OUTPUT=$PICARDSTATS_TXT_FN"
 
-set BAMCOVERAGE_OPTIONS="-b $STAR_OUT_SORTED_BAM_FN -p $NUMCPU -o $STAR_OUT_BW_FN --normalizeUsingRPKM"
+set BAMCOVERAGE_OPTIONS="-b $STAR_OUT_SORTED_BAM_FN -p $NUMCPU -o $STAR_OUT_BW_FN --normalizeUsing RPKM"
 
 
 ### START ACTUALLY RUNNING
@@ -100,21 +100,19 @@ echo "STEP 1. KALLISTO PSEUDOALIGNMENT ($curtime)"
 kallisto $KALLISTO_OPTIONS
 
 set curtime=`date`
-echo "STEP 2. STAR ALIGNMENT ($curtime)"
+echo "STEP 2. STAR ALIGNMENT, PICARD SORT&INDEX ($curtime)"
 STAR $STAR_OPTIONS
-
-set curtime=`date`
-echo "STEP 3. PICARD STATS ($curtime)"
 $PICARDSORT_BIN $PICARDSORT_OPTIONS
 $PICARDINDEX_BIN $PICARDINDEX_OPTIONS
 
 set curtime=`date`
-echo "STEP 4. DEEPTOOLS GENOME TRACKS ($curtime)"
+echo "STEP 3. DEEPTOOLS GENOME TRACKS ($curtime)"
 bamCoverage $BAMCOVERAGE_OPTIONS
 ln -s $STAR_OUT_BW_FN $STAR_NAMED_OUT_BW_FN
 
-$PICARDSTATS_BIN $PICARDSTATS_OPTIONS1
-$PICARDSTATS_BIN $PICARDSTATS_OPTIONS2
+set curtime=`date`
+echo "STEP 4. PICARD QC ($curtime)"
+$PICARDSTATS_BIN $PICARDSTATS_OPTIONS
 
 set curtime=`date`
 echo "# slurm run finished on $curhost at $curtime"
