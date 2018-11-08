@@ -1,25 +1,24 @@
-# oshealab_genomic_analysis -- scripts to perform routine genomics analyses
-
-This package will get you started analyzing genomics data in a reproducible way.
+# oshealab_genomic_scripts -- scripted and reproducible genomic data analysis
 
 Any questions, contact fred.davis@nih.gov
 
 ## Overview
 
-The goal is to have your analysis (1) well-documented, (2) easy to reproduce,
-and (3) following standard practices.
+The goal of this package is to help you analyze your genomic data in 
+(1) well-documented, (2) easy to reproduce, and (3) standard way 
 
-The instructions below and the scripts enclosed are written for the HPC
-computing environment at NIH. You need accounts on helix and the biowulf
-cluster, and sufficient disk space to deal with sequence data and the resulting
-analyses. Disk space varies by how deeply your samples were sequenced, but a
-reasonable estimate is ~5GB per sample
+## Getting started
+
+This package is written for the HPC computing environment at NIH.
+You need accounts on helix and the biowulf cluster, and sufficient disk space to
+deal with sequence data and the resulting analyses. Disk space varies by how
+deeply your samples were sequenced, but ~5GB/sample is a reasonable estimate.
 
 Request your account [here](https://hpc.nih.gov/docs/accounts.html)
 
 ## General advice for computational work
 
-1. Take responsibility.
+### 1. Take responsibility.
 
 Neither the experiment nor the analysis is complicated -- thousands of
 people have done RNA-seq before -- but, you still have to invest time to
@@ -30,59 +29,59 @@ the analysis, keep reading or asking others until you can.
 This package is meant to help you get started -- not to offload your
 responsibility, or to substitute for your thinking.
 
-2. Write everything down.
+### 2. Write everything down.
 
 Meticulous notes are just as critical for computational work as they are for
 experimental work. I keep records in three ways:
     
-    1. Scripts. These are text files containing the actual commands that perform
-    each analysis step. Scripts force you to keep track of your analyses.
+1. Scripts. These are text files containing the actual commands that perform
+each analysis step. Scripts force you to keep track of your analyses.
  
-    2. README files. If there is anything important to know or remember about
-    what happened in a specific directory, I write it in a README text file
-    that I keep in that specific directory.
+2. README files. If there is anything important to know or remember about
+what happened in a specific directory, I write it in a README text file
+that I keep in that specific directory.
  
-    3. Electronic lab notebook. I keep a chronological lab notebook made of
-    text file per day (see [mdlabbook](http://github.com/fredpdavis/mdlabbook).
-    You should use whatever system you are comfortable with, but I highly
-    recommend you keep eletronic notes. When you want to remember what commands
-    you tried, or what analysis you were working on Monday two weeks ago, you
-    are unlikely to remember accurately unless you can look back at notes.
+3. Electronic lab notebook. I keep a chronological lab notebook made of
+text file per day (see [mdlabbook](http://github.com/fredpdavis/mdlabbook).
+You should use whatever system you are comfortable with, but I highly
+recommend you keep eletronic notes. When you want to remember what commands
+you tried, or what analysis you were working on Monday two weeks ago, you
+are unlikely to remember accurately unless you can look back at notes.
 
-3. Look inside.
+### 3. Look inside.
 
 Scripts are just text files -- view them in a text editor, or at the command
 line using the `less FILENAME` command, to see the commands that are being
 run.
 
-4. Be tidy.
+### 4. Be tidy.
 
-    i. keep an organized directory structure.
+1. keep an organized directory structure.
 
-    I make a new folder for each project I work on, with the following structure:
-        
-        - README -- file where I describe the project and broad goals
-        - data/ - directory storing raw data, each in its own folder -- eg, data/fastq/
-        - src/ - directory storing all scripts / code used in the project. I usually organize by language -- eg, src/R/
-        - run/ - directory where I run scripts, each kept in a dated directory -- eg, run/20181027.align_reads/
-        - results/ - store results from off-the-shelf programs -- eg, results/kallisto/
-        - analysis/ - where I do 'secondary' analysis, like making figures
+I make a new folder for each project I work on, with the following structure:
+    
+    - README -- file where I describe the project and broad goals
+    - data/ - directory storing raw data, each in its own folder -- eg, data/fastq/
+    - src/ - directory storing all scripts / code used in the project. I usually organize by language -- eg, src/R/
+    - run/ - directory where I run scripts, each kept in a dated directory -- eg, run/20181027.align_reads/
+    - results/ - store results from off-the-shelf programs -- eg, results/kallisto/
+    - analysis/ - where I do 'secondary' analysis, like making figures
 
-    This package comes with, or builds up, the directory structure above.
+This package comes with, or builds up, the directory structure above.
 
-    ii. don't use spaces or weird characters (asterisks, slashes, apostrophes,
-    quotes, etc) in your sample names, condition names. Use underscores and
-    periods if you need separators.
+2. don't use spaces or weird characters (asterisks, slashes, apostrophes,
+quotes, etc) in your sample names, condition names. Use underscores and
+periods if you need separators.
 
-    iii. don't edit stuff unless you understand what you're doing.
+3. don't edit stuff unless you understand what you're doing.
 
-    iv. Turn off Mac autocorrect for quotes. Apostrophes and quotes have
-    specific meanings in scripts. By default, Macs will often change these
-    kinds of characters to curly quotes that will break the command -- this is
-    a problem when eg, you try to copy and paste a command into a script that
-    you are editing, or into the terminal to test a command.
+4. Turn off Mac autocorrect for quotes. Apostrophes and quotes have
+specific meanings in scripts. By default, Macs will often change these
+kinds of characters to curly quotes that will break the command -- this is
+a problem when eg, you try to copy and paste a command into a script that
+you are editing, or into the terminal to test a command.
 
-5. Trust no one, especially yourself
+### 5. Trust no one, especially yourself
 
 This is of course an exaggeration -- ultimately you are trusting multiple
 layers of software that operate the sequencer through to the programs
@@ -98,8 +97,10 @@ looks weird, it probably is.
 We will focus on the most routine (and often most informative) analyses.
 
 1. estimating transcript abundance (= expression level)
+
 2. identifying differentially expressed genes between pairs of conditions
-3. visualizing results with scatterplots and heatmaps.
+
+3. visualizing results using genome browsers, scatterplots and heatmaps.
 
 We will not cover the many other kinds of analyses you can perform on RNA-seq
 measurements, including identifying alternative splicing events, estimating
@@ -137,7 +138,7 @@ program, and then read their manuals to understand what each does and what other
 options you may want to try.
 
 
-### 0. Setup your project directory
+### 1. Setup your project directory
 
 1. Login to helix
 
@@ -147,43 +148,43 @@ options you may want to try.
 
 2. if you don't already have one, make a projects directory on your /data share.
 
-NOTE: __REPLACE davisfp with your username__
+    - NOTE: __REPLACE davisfp with your username__
 
-```sh
-mkdir /data/davisfp/projects
-```
+    ```sh
+    mkdir /data/davisfp/projects
+    ```
 
 3. change directories to your projects directory
 
-```sh
-cd /data/davisfp/projects
-```
+    ```sh
+    cd /data/davisfp/projects
+    ```
 
 4. download this package
 
-```sh
-git clone https://github.com/fredpdavis/oshealab_genomic_analysis.git
-```
+    ```sh
+    git clone https://github.com/fredpdavis/oshealab_genomic_analysis.git
+    ```
 
 5. rename to your project name, cytokineX in this example:
 
-```sh
-mv oshealab_genomic_analysis cytokineX
-```
+    ```sh
+    mv oshealab_genomic_analysis cytokineX
+    ```
 
 6. change directories to this project.
 
-```sh
-cd cytokineX
-```
+    ```sh
+    cd cytokineX
+    ```
 
 7. List the files to see what you're getting in this package.
 
-```sh
-tree .
-```
+    ```sh
+    tree .
+    ```
 
-### 1. Prepare your input files
+### 2. Prepare your input files
 
 Now that you have a set of scripts and basic directory structure, you can start
 using it to analyze your own data.
@@ -270,7 +271,7 @@ the FASTQ comes from a published paper.
     cytokineStim=nc,cellType=CD4	cytokineStim=nc,cellType=CD8
     ```
 
-### 2. Retrieve and prepare genome/gene information
+### 3. Retrieve and prepare genome/gene information
 
 This step will retrieve the files necessary to process mouse data. Take a look
 inside the script to get a sense of what data is being retrieved. If you ever
@@ -314,7 +315,7 @@ logout
 You only need to run this step once (per project). You don't need to run this
 step again if you just want to process additional samples.
 
-### 3. Process your samples
+### 4. Process your samples
 
 - Make a new directory and copy the next script there.
 
@@ -367,7 +368,7 @@ sbatch process_rnaseq_samples.slurm.csh
 logout
 ```
 
-### 4. Create figures and tables
+### 5. Create figures and tables
 
 The next steps of identifying differentially expresed genes and creating figures
 is performed by an R script.
@@ -420,8 +421,6 @@ R> tx <- makeFigures(dat)
 ```
 scp -r data/projects/cytokineX/analysis/20181102.makeFigures .
 ```
-
-### 5. Enjoy!
 
 
 ## Design decisions
