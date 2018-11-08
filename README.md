@@ -197,7 +197,7 @@ using it to analyze your own data.
 For testing, I provide four small fastq files-- you can delete if you want.
 
 ```
-ls data/fastq/test
+shell> ls data/fastq/test
     
 in1.fq.gz
 in2.fq.gz
@@ -226,7 +226,8 @@ the FASTQ comes from a published paper.
 - This package includes an example file listing the test samples
 
 ```
-> cat metadata/rnaseq_samples.txt
+shell> cat metadata/rnaseq_samples.txt
+
 sampleID	sampleName	runID	fastqName	cytokineStim
 r001	unstim_rep1	test	in1.fq.gz	nc
 r002	unstim_rep3	test	in2.fq.gz	nc
@@ -262,7 +263,8 @@ editor: `nano metadata/rnaseq_samples.txt`
 the sample sheet
 
 ```
-> cat metadata/rnaseq_comparisons.txt
+shell> cat metadata/rnaseq_comparisons.txt
+
 cytokineStim=nc	cytokineStim=IFNg_72h
 ```
 
@@ -274,7 +276,7 @@ AND's will be interpreted first.
 cytokineStim=nc,cellType=CD4	cytokineStim=nc,cellType=CD8
 ```
 
-### 3. Retrieve and prepare genome/gene information
+### 3. Retrieve and prepare genome and gene information
 
 This step will retrieve the files necessary to process mouse data. Take a look
 inside the script to get a sense of what data is being retrieved. If you ever
@@ -411,7 +413,6 @@ module load R
 - start R and generate the figures
 
 ```
-R
 R> source("../../src/R/basicRnaSeqAnalysis.R")
 R> dat <- loadData()
 R> tx <- makeFigures(dat)
