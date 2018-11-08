@@ -60,12 +60,12 @@ run.
 
 I make a new folder for each project I work on, with the following structure:
     
-    - README -- file where I describe the project and broad goals
-    - data/ - directory storing raw data, each in its own folder -- eg, data/fastq/
-    - src/ - directory storing all scripts / code used in the project. I usually organize by language -- eg, src/R/
-    - run/ - directory where I run scripts, each kept in a dated directory -- eg, run/20181027.align_reads/
-    - results/ - store results from off-the-shelf programs -- eg, results/kallisto/
-    - analysis/ - where I do 'secondary' analysis, like making figures
+- README -- file where I describe the project and broad goals
+- data/ - directory storing raw data, each in its own folder -- eg, data/fastq/
+- src/ - directory storing all scripts / code used in the project. I usually organize by language -- eg, src/R/
+- run/ - directory where I run scripts, each kept in a dated directory -- eg, run/20181027.align_reads/
+- results/ - store results from off-the-shelf programs -- eg, results/kallisto/
+- analysis/ - where I do 'secondary' analysis, like making figures
 
 This package comes with, or builds up, the directory structure above.
 
@@ -143,56 +143,56 @@ options you may want to try.
 
 ### 1. Setup your project directory
 
-1. Login to helix
+- Login to helix
 
     - on Mac: open the Terminal program, and type `ssh helix.nih.gov`, press enter, and enter your password when prompted
 
     - on Windows: download and run [PuTTY](https://www.putty.org) to ssh into helix.nih.gov, specifying your username and password
 
-2. if you don't already have one, make a projects directory on your /data share.
+- if you don't already have one, make a projects directory on your /data share.
 
     - NOTE: __REPLACE davisfp with your username__
 
-    ```sh
-    mkdir /data/davisfp/projects
-    ```
+```
+mkdir /data/davisfp/projects
+```
 
-3. change directories to your projects directory
+- change directories to your projects directory
 
-    ```sh
-    cd /data/davisfp/projects
-    ```
+```
+cd /data/davisfp/projects
+```
 
-4. download this package
+- download this package
 
-    ```sh
-    git clone https://github.com/fredpdavis/oshealab_genomic_analysis.git
-    ```
+```
+git clone https://github.com/fredpdavis/oshealab_genomic_analysis.git
+```
 
-5. rename to your project name, cytokineX in this example:
+- rename to your project name, cytokineX in this example:
 
-    ```sh
-    mv oshealab_genomic_analysis cytokineX
-    ```
+```
+mv oshealab_genomic_analysis cytokineX
+```
 
-6. change directories to this project.
+- change directories to this project.
 
-    ```sh
-    cd cytokineX
-    ```
+```
+cd cytokineX
+```
 
-7. List the files to see what you're getting in this package.
+- List the files to see what you're getting in this package.
 
-    ```sh
-    tree .
-    ```
+```
+tree .
+```
 
 ### 2. Prepare your input files
 
 Now that you have a set of scripts and basic directory structure, you can start
 using it to analyze your own data.
 
-1. Get FASTQ sequence files
+- Get FASTQ sequence files
 
 For testing, I provide four small fastq files-- you can delete if you want.
 
@@ -219,7 +219,7 @@ named by sequencing run identifiers (if sequenced locally), or by author if
 the FASTQ comes from a published paper.
 
 
-2. Edit the sample sheet `metadata/rnaseq_samples.txt`
+- Edit the sample sheet `metadata/rnaseq_samples.txt`
 
     - This is a tab-delimited text file. Make sure you use tab's, __NOT SPACES__
 
@@ -250,7 +250,7 @@ the FASTQ comes from a published paper.
     - expects to find fastq files in `data/fastq/<runID>/<fastqName>`
 
 
-3. Edit the comparisons file, listing pairs of conditions to compare:
+- Edit the comparisons file, listing pairs of conditions to compare:
 
     - This is a tab-delimited text file. Make sure you use tab's, __NOT SPACES__
 
