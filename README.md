@@ -48,13 +48,22 @@ recommend you keep eletronic notes. When you want to remember what commands
 you tried, or what analysis you were working on Monday two weeks ago, you
 are unlikely to remember accurately unless you can look back at notes.
 
-### 3. Look inside.
+### 3. Trust no one, especially yourself
+
+This is of course an exaggeration -- ultimately you are trusting multiple
+layers of software that operate the sequencer through to the programs
+that generate the figures you will intrepret. Be skeptical of all results.
+Don't over-interpret or assume your results are correct: lots of things can
+and do go wrong. Do you have positive and negative controls? If something
+looks weird, it probably is.
+
+### 4. Look inside.
 
 Scripts are just text files -- view them in a text editor, or at the command
 line using the `less FILENAME` command, to see the commands that are being
 run.
 
-### 4. Be tidy.
+### 5. Be tidy.
 
 #### i. keep an organized directory structure.
 
@@ -83,15 +92,6 @@ Apostrophes and quotes have specific meanings in scripts. By default, Macs will
 often change these kinds of characters to curly quotes that will break the
 command -- this is a problem when eg, you try to copy and paste a command into
 a script that you are editing, or into the terminal to test a command.
-
-### 5. Trust no one, especially yourself
-
-This is of course an exaggeration -- ultimately you are trusting multiple
-layers of software that operate the sequencer through to the programs
-that generate the figures you will intrepret. Be skeptical of all results.
-Don't over-interpret or assume your results are correct: lots of things can
-and do go wrong. Do you have positive and negative controls? If something
-looks weird, it probably is.
 
 ## RNA-seq
 
@@ -192,7 +192,7 @@ tree .
 Now that you have a set of scripts and basic directory structure, you can start
 using it to analyze your own data.
 
-- Get FASTQ sequence files
+#### Get FASTQ sequence files
 
 For testing, I provide four small fastq files-- you can delete if you want.
 
@@ -219,60 +219,60 @@ named by sequencing run identifiers (if sequenced locally), or by author if
 the FASTQ comes from a published paper.
 
 
-- Edit the sample sheet `metadata/rnaseq_samples.txt`
+#### Edit the sample sheet `metadata/rnaseq_samples.txt`
 
-    - This is a tab-delimited text file. Make sure you use tab's, __NOT SPACES__
+- This is a tab-delimited text file. Make sure you use tab's, __NOT SPACES__
 
-    - This package includes an example file listing the test samples
+- This package includes an example file listing the test samples
 
-    ```
-    > cat metadata/rnaseq_samples.txt
-    sampleID	sampleName	runID	fastqName	cytokineStim
-    r001	unstim_rep1	test	in1.fq.gz	nc
-    r002	unstim_rep3	test	in2.fq.gz	nc
-    r003	IFNg_72h_rep1	test	in3.fq.gz	IFNg_72h
-    r004	IFNg_72_rep2	test	in4.fq.gz	IFNg_72h
-    ```
+```
+> cat metadata/rnaseq_samples.txt
+sampleID	sampleName	runID	fastqName	cytokineStim
+r001	unstim_rep1	test	in1.fq.gz	nc
+r002	unstim_rep3	test	in2.fq.gz	nc
+r003	IFNg_72h_rep1	test	in3.fq.gz	IFNg_72h
+r004	IFNg_72_rep2	test	in4.fq.gz	IFNg_72h
+```
 
-    - Edit this file to describe your samples. nano is an easy-to-use text
-      editor: `nano metadata/rnaseq_samples.txt`
+- Edit this file to describe your samples. nano is an easy-to-use text
+editor: `nano metadata/rnaseq_samples.txt`
 
-    - requires 4 fields:
-        1. sampleID
-        2. sampleName
-        3. runID
-        4. fastqName
+- requires 4 fields:
+    1. sampleID
+    2. sampleName
+    3. runID
+    4. fastqName
 
-    - add additional columns to describe sample properties like celltype,
-      tissue, etc. this is useful for specifying the condition pairs you
-      want to compare in the next file.
+- add additional columns to describe sample properties like celltype,
+  tissue, etc. this is useful for specifying the condition pairs you
+  want to compare in the next file.
 
-    - expects to find fastq files in `data/fastq/<runID>/<fastqName>`
+- expects to find fastq files in `data/fastq/<runID>/<fastqName>`
 
 
-- Edit the comparisons file, listing pairs of conditions to compare:
+#### Edit the comparisons file, listing pairs of conditions to compare:
 
-    - This is a tab-delimited text file. Make sure you use tab's, __NOT SPACES__
+- This is a tab-delimited text file. Make sure you use tab's, __NOT SPACES__
 
-    - Each line represents a pairwise comparison
+- Each line represents a pairwise comparison
 
-    - Two columns, each specifying the samples to compare
+- Two columns, each specifying the samples to compare
 
-    - Samples can be specified by sampleName or by other features specified in
-      the sample sheet
+- Samples can be specified by sampleName or by other features specified in
+the sample sheet
 
-    ```
-    > cat metadata/rnaseq_comparisons.txt
-    cytokineStim=nc	cytokineStim=IFNg_72h
-    ```
+```
+> cat metadata/rnaseq_comparisons.txt
+cytokineStim=nc	cytokineStim=IFNg_72h
+```
 
-    - If you want to specify your samples using more than one feature, use
-    commas to express logical AND, and semicolon to express logical OR.
-    AND's will be interpreted first.
+- If you want to specify your samples using more than one feature, use
+commas to express logical AND, and semicolon to express logical OR.
+AND's will be interpreted first.
 
-    ```
-    cytokineStim=nc,cellType=CD4	cytokineStim=nc,cellType=CD8
-    ```
+```
+cytokineStim=nc,cellType=CD4	cytokineStim=nc,cellType=CD8
+```
 
 ### 3. Retrieve and prepare genome/gene information
 
