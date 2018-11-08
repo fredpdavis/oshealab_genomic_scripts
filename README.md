@@ -375,7 +375,7 @@ logout
 
 ### 5. Create figures and tables (__NOT YET__)
 
-__ NOTE THIS STEP IS NOT FINISHED YET __
+__ NOTE THIS STEP IS NOT YET FINISHED __
 
 The next steps of identifying differentially expresed genes and creating figures
 is performed by an R script.
