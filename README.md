@@ -56,7 +56,7 @@ run.
 
 ### 4. Be tidy.
 
-1. keep an organized directory structure.
+#### i. keep an organized directory structure.
 
 I make a new folder for each project I work on, with the following structure:
     
@@ -69,17 +69,20 @@ I make a new folder for each project I work on, with the following structure:
 
 This package comes with, or builds up, the directory structure above.
 
-2. don't use spaces or weird characters (asterisks, slashes, apostrophes,
-quotes, etc) in your sample names, condition names. Use underscores and
+#### ii. don't use weird characters
+
+Don't use spaces or weird characters (asterisks, slashes, apostrophes,
+quotes, etc) in your sample names, condition names, etc. Use underscores and
 periods if you need separators.
 
-3. don't edit stuff unless you understand what you're doing.
+#### iii. don't edit stuff unless you understand what you're doing.
 
-4. Turn off Mac autocorrect for quotes. Apostrophes and quotes have
-specific meanings in scripts. By default, Macs will often change these
-kinds of characters to curly quotes that will break the command -- this is
-a problem when eg, you try to copy and paste a command into a script that
-you are editing, or into the terminal to test a command.
+#### iv. Turn off Mac autocorrect.
+
+Apostrophes and quotes have specific meanings in scripts. By default, Macs will
+often change these kinds of characters to curly quotes that will break the
+command -- this is a problem when eg, you try to copy and paste a command into
+a script that you are editing, or into the terminal to test a command.
 
 ### 5. Trust no one, especially yourself
 
@@ -108,7 +111,7 @@ nascent transcription, or evaluating more complex experimental designs.
 
 ### Data sources
 
-This package uses the following external data sources. You don't need to download these, as this package either comes with or will retrieve the appropriate files.
+This package uses the following external data sources. __You don't need to download these__, as this package either comes with or will retrieve the appropriate files.
 
 | data set                                                                                      | purpose                                       |
 |-----------------------------------------------------------------------------------------------|-----------------------------------------------|
@@ -127,7 +130,7 @@ This package uses the following underlying tools to analyze RNA-seq data.
 | [sleuth 0.29](https://pachterlab.github.io/sleuth/)           | R package for differential expression analysis            |
 | [R 3.5.0](https://www.r-project.org)                          | creating figures, and running sleuth                      |
 
-You don't need to download these, as they are already installed on the NIH HPC
+__You don't need to download these__, as they are already installed on the NIH HPC
 and accessible through their very well maintained system of
 ['modules'](https://hpc.nih.gov/apps/modules.html)
 
@@ -280,20 +283,20 @@ this file.
 
 - Make a new directory and copy the prepared_indices.slurm.csh script there.
 
-```sh
+```
 mkdir -p run/20181102.prepare_inputs
 cp src/slurm/prepare_indices.slurm.csh run/20181102.prepare_inputs
 ```
 
 - Edit the script to specify the BASEDIR
 
-```sh
+```
 set BASEDIR="/data/davisfp/projects/cytokineX"
 ```
 
 - Submit the script to biowulf to download and process necessary files
 
-```sh
+```
 ssh biowulf.nih.gov
 cd /data/davisfp/projects/cytokineX/20181102.prepare_indices
 mkdir slurm_out
@@ -302,13 +305,13 @@ sbatch prepare_indices.slurm.csh
 
 - To check if the job is complete, use the squeue command
 
-```sh
+```
 squeue -u davisfp
 ```
 
 - Once the job is done, logoff biowulf
 
-```sh
+```
 logout
 ```
 
@@ -319,14 +322,14 @@ step again if you just want to process additional samples.
 
 - Make a new directory and copy the next script there.
 
-```sh
+```
 mkdir -p run/20181102.process_samples
 cp src/slurm/process_rnaseq_samples.slurm.csh run/20181102.process_samples
 ```
 
 - Edit the script to specify the BASEDIR
 
-```sh
+```
 set BASEDIR="/data/davisfp/projects/cytokineX"
 ```
 
@@ -335,27 +338,27 @@ set BASEDIR="/data/davisfp/projects/cytokineX"
     a subset of those samples, you can specify their defining features in the
     script
     
-```sh
+```
 set SAMPLE_OPTION="-cytokine no -cellType CD4"
 ```
 
 - Edit the script to tell the cluster how many jobs you will run. For example,
   we'd like to process the 4 samples in our test set:
 
-```sh
+```
 #SBATCH --array=1-4
 ```
 
 - It makes sense to run this script on a single job to begin with, just to
   make sure that everything runs properly:
 
-```sh
+```
 #SBATCH --array=1-1
 ```
 
 - Login to biowulf and submit the jobs to 
 
-```sh
+```
 ssh biowulf.nih.gov
 cd /data/davisfp/projects/cytokineX/20181102.process_samples
 mkdir slurm_out
@@ -364,7 +367,7 @@ sbatch process_rnaseq_samples.slurm.csh
 
 - Check job status with `squeue`; once the job is done, logoff biowulf
 
-```sh
+```
 logout
 ```
 
