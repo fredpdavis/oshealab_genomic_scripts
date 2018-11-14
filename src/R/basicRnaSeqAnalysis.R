@@ -62,7 +62,7 @@ main <- function(dat, makeFigs = TRUE, returnData = TRUE) {
    }
 
    if (! "deg" %in% names(dat)) {
-      print("Loading DEG")
+      print("Loading differentially expressed genes")
       dat <- defineDEG(dat)
       if (returnData)    return(dat)
    }
@@ -90,14 +90,13 @@ makeFigures <- function(dat, figList) {
 
 # Heatmap of DEG genes
    if (any(c("all","2D") %in% figList)) {
-       plotHmap.bulkReporter(dat$dat.bulk,
-                             figName    = "2D",
-                             dataset    = "reporter",
-                             nlMode     = "fracMax",
-                             repAvg        = TRUE,
-                             clusterRows   = TRUE,
-                             decontamEx    = TRUE,
-                             show_rownames = FALSE)
+       plotHmap.deg(dat$dat.bulk,
+                    figName    = "2D",
+                    dataset    = "reporter",
+                    nlMode     = "fracMax",
+                    repAvg        = TRUE,
+                    clusterRows   = TRUE,
+                    show_rownames = FALSE)
    }
 
 
@@ -259,7 +258,7 @@ defineDEG <- function(dat,
 
 # consistent DEG pairwise SLEUTH comparison
 
-   celltypePairs <- dat$specs$deg.celltypePairs
+#ORIG:   celltypePairs <- dat$specs$deg.celltypePairs
 
    genes.deg <- list()
    t2g <- data.frame(
@@ -271,7 +270,12 @@ defineDEG <- function(dat,
 
    allSamples <- dat$specs$rnaSamples
 
-   for (cellPair in celltypePairs) {
+#ORIG   for (cellPair in celltypePairs)
+   for (i in 1:nrow(dat$specs$rnaComps)) {
+      cellPair <- 
+
+# HERENOW 181114_1242
+      sampleGroup1 <- dat$specs$rnaComps$sampleGroup1[i]
    
       print(paste0("comparing ",cellPair$cellType1," to ",cellPair$cellType2))
       cell12 <- paste0(cellPair$cellType1,"_vs_",cellPair$cellType2)
@@ -461,12 +465,9 @@ defineDEG <- function(dat,
 
 
 setSpecs <- function(){
-# CR: note the single cell routein uses inferstate's scoreSCsig.setPaths
-
-#   library(readxl)
 
    specs<-list(
-      baseDir           = c("~/data/projects/exfoxp3")
+      baseDir           = c("~/data/projects/cytokineX")
    )
 
    specs$thresh<-list()
@@ -477,15 +478,10 @@ setSpecs <- function(){
 
    specs$thresh$GOstats.pvalue <- 0.001
 
-   specs$outDir <- paste0(specs$baseDir, "/analysis/20181004.paperFigs")
+   specs$outDir <- paste0(specs$baseDir, "/analysis/basicFigures")
 
    specs$outExprFn <- paste0(specs$outDir, "/geneExpr.txt.gz")
 
-
-   specs$geneStrxDir <- paste0(
-      specs$baseDir,"/data/gene_annotation.GRCm38.ENSEMBL82/")
-   specs$geneStrxTSS      <- paste0(specs$geneStrxDir,"/mm10_tss_exact.bed")
-   specs$geneStrxGeneBody <- paste0(specs$geneStrxDir, "/mm10_genebodies.bed")
    specs$transcriptInfo <- read.table(paste0(specs$baseDir,
       "/data/txInfo/GRCm38.82.withpatch.ERCC.transcript_info.txt"),
       quote = "", header = TRUE, sep = "\t", as.is = TRUE)
@@ -493,100 +489,64 @@ setSpecs <- function(){
 
 
    specs$kallistoBaseDir <- paste0(specs$baseDir,
-      "/results/RNAseq/kallisto/")
-
-   specs$kallistoBaseDir.stranded <- paste0(specs$baseDir,
-      "/results/RNAseq/kallisto_stranded/")
+      "/results/RNAseq/kallisto.GRCm38.94/")
 
    specs$sleuthBaseDir <- paste0(specs$baseDir, "/results/RNAseq/sleuth/")
 
-   specs$bin$bedtools <- "/usr/local/apps/bedtools/2.25.0/bin/bedtools"
-   specs$bin$samtools <- "/usr/local/apps/samtools/1.2/bin/samtools"
-   specs$bin$ucsctools <- "/usr/local/apps/ucsc/365/bin/x86_64"
 
-   print("LOADING RNA SAMPLES")
+   print("Loading RNA-seq sample information")
    specs$rnaSamples <- read.table(paste0(specs$baseDir,
-      "/metadata/exfoxp3_rna_samples.txt"), header=TRUE, sep="\t", as.is=TRUE)
+      "/metadata/rnaseq_samples.txt"), header=TRUE, sep="\t", as.is=TRUE)
+   print(" DONE!")
+
+   print("Loading pairs of RNA-seq samples to compare")
+   specs$rnaComps <- read.table(paste0(specs$baseDir,
+      "/metadata/rnaseq_comparisons.txt"), header=TRUE, sep="\t", as.is=TRUE)
    print(" DONE!")
 
 #   specs$rnaSamples$cellType <- gsub(".si[0-9]+$", "", specs$rnaSamples$sampleName)
 
-
 # Remove outliers
-   specs$rnaSamples.outliers <- c()
-   if (length(specs$rnaSamples.outliers) > 0) {
+   if (sum(specs$rnaSamples$outlier == "yes")) {
       print(paste("Skipping RNA outliers: ",
-                  paste0(specs$rnaSamples.outliers, collapse=", ")))
+         paste0(specs$rnaSamples$sampleName[specs$rnaSamples$outlier == "yes"],
+                collapse=", ")))
 
-      specs$rnaSamples <- specs$rnaSamples[!(specs$rnaSamples$sampleName %in%
-                                           specs$rnaSamples.outliers),]
+      specs$rnaSamples <- specs$rnaSamples[specs$rnaSamples.outliers != "yes",]
    }
 
 
-# Remove chromium entries
-   specs$rnaSamples <- specs$rnaSamples[specs$rnaSamples$libraryType != "chromium",]
-
-   specs$chipSamples <- read.table(paste0(specs$baseDir,
-      "/metadata/exfoxp3_chip_samples.txt"), header=TRUE, sep="\t", as.is=TRUE)
-
    specs$transcriptInfo <- read.table(paste(specs$baseDir,
-      "/data/txInfo/GRCm38.82.FPtags.ERCC.transcript_info.txt",sep=""),
+      "/data/kallisto_files.GRCm38.94/transcript_info.GRCm38.94.txt",sep=""),
       quote="", header=TRUE,sep="\t",as.is=TRUE)
-
-
-# Chromium 10X setup
-   specs$sc <- list()
-   specs$sc$dataDir <- paste0(specs$baseDir,"/run/",
-                              "20171120.cellranger_aggr/trth2_sc201711")
-   specs$sc$fn_tx_gene_map <- paste0(specs$baseDir,
-                                     "/data/kallisto_files/tx_gene_name_map.txt")
-
-   specs$sc$txGeneMap <- read.table(specs$sc$fn_tx_gene_map,header=FALSE,sep=" ")
-   colnames(specs$sc$txGeneMap) <- c("gene_id", "tx_id", "gene_name")
 
    return(specs)
 
 }
 
 
-plotHmap.bulkReporter <- function(dat,
-                                  nlMode = "minMax",
-                                  geneList,
-                                  show_rownames = TRUE,
-                                  clusterCols = FALSE,
-                                  clusterRows = TRUE,
-                                  rowFontSize = 2,
-                                  curHeight = 3,
-                                  curWidth = 1.5,
-                                  rowGaps,
-                                  repAvg = FALSE,
-                                  figName = "bulkReporterRNA_lung_hmap",
-                                  dataset = "reporter", #nascent
-                                  decontamEx = FALSE,
-                                  decontamEx.f_c = 0.3
-                                 ) {
+plotHmap.deg <- function(dat,
+                         nlMode = "minMax",
+                         geneList,
+                         show_rownames = TRUE,
+                         clusterCols = FALSE,
+                         clusterRows = TRUE,
+                         rowFontSize = 2,
+                         curHeight = 3,
+                         curWidth = 1.5,
+                         rowGaps,
+                         repAvg = FALSE,
+                         figName = "deg_hmap"
+                         ) {
 
 # PURPOSE: make heatmap of bulk reporter RNA-seq data from lung
 
    curFig <- figName
 
-   if (dataset == "reporter") {
-      curCellTypes <- c("lung.Foxp3p", "lung.exFoxp3", "lung.nonFoxp3")
-      labelCellTypes <- c("Foxp3p", "ex-Foxp3", "non-Foxp3")
-      dataType2 <- "bulk"
-
-      degTypes <- c("lung.nonFoxp3_vs_lung.exFoxp3",
-                    "lung.Foxp3p_vs_lung.exFoxp3",
-                    "lung.nonFoxp3_vs_lung.Foxp3p")
-
-   } else if (dataset == "nascent") {
-
-      curCellTypes <- c("iTreg", "TrTh2", "Th2")
-      labelCellTypes <- c("iTreg", "eF-Treg", "Th2")
-      dataType2 <- "nascent"
-
-      degTypes <-  c( "Th2_vs_TrTh2", "iTreg_vs_TrTh2")
-   }
+   curCellTypes <- c("iTreg", "TrTh2", "Th2")
+   labelCellTypes <- c("iTreg", "eF-Treg", "Th2")
+   dataType2 <- "nascent"
+   degTypes <-  c( "Th2_vs_TrTh2", "iTreg_vs_TrTh2")
 
 
    curSampleList <- dat$specs$rnaSamples[dat$specs$rnaSamples$dataType2 == dataType2 &
@@ -631,22 +591,6 @@ plotHmap.bulkReporter <- function(dat,
          hMat[,newTpmCol] <- rowMeans(hMat[,paste0("tpm.",curTypeSamples)])
       }
       hMat <- hMat[,newTpmCols]
-
-      if (dataset == "reporter" & decontamEx) {
-         newTpmCol <- "meantpm.lung.exFoxp3.dec"
-         hMat[,newTpmCol] <- ( hMat[,"meantpm.lung.exFoxp3"] -
-                               decontamEx.f_c * hMat[,"meantpm.lung.Foxp3p"]) /
-                             (1 - decontamEx.f_c)
-         hMat[hMat[,newTpmCol] < 0, newTpmCol] <- 0
-
-         curCellTypes <- c("lung.Foxp3p", "lung.exFoxp3", "lung.exFoxp3.dec", "lung.nonFoxp3")
-         labelCellTypes <- c("Foxp3p", "ex-Foxp3", "ex-Foxp3-dec", "non-Foxp3")
-
-         hMat[,"meantpm.lung.exFoxp3"] <- hMat[,"meantpm.lung.exFoxp3.dec"]
-         curCellTypes <- c("lung.Foxp3p", "lung.exFoxp3", "lung.nonFoxp3")
-         labelCellTypes <- c("Foxp3p", "ex-Foxp3", "non-Foxp3")
-         hMat <- hMat[,paste0("meantpm.", curCellTypes)]
-      }
    }
 
    hMat <- as.matrix(hMat)
@@ -687,55 +631,9 @@ plotHmap.bulkReporter <- function(dat,
    print(paste0("COLUMN NAMES FOR ANNITATION"))
    print(rownames(colAnn))
 
-   if (dataset == "reporter") {
-
-      if (! repAvg) {
-         colAnn$celltype[grep("RFPp_GFPn", rownames(colAnn))] <- c("ex-Foxp3")
-         colAnn$celltype[grep("RFPp_GFPp", rownames(colAnn))] <- c("Foxp3")
-         colAnn$celltype[grep("RFPn_GFPn", rownames(colAnn))] <- c("non-Foxp3")
-      } else if (repAvg) {
-         colAnn$celltype[grep("lung.Foxp3p", rownames(colAnn))] <- c("Foxp3")
-         colAnn$celltype[grep("lung.exFoxp3", rownames(colAnn))] <- c("ex-Foxp3")
-         colAnn$celltype[grep("lung.nonFoxp3", rownames(colAnn))] <- c("non-Foxp3")
-      } 
-
-   } else {
-
-      colAnn$celltype[grep("TrTh2", rownames(colAnn))] <- c("TrTh2")
-      colAnn$celltype[grep("iTreg", rownames(colAnn))] <- c("iTreg")
-      colAnn$celltype[grep("Th2", rownames(colAnn))] <- c("Th2")
-
-   }
-
-   if (0) {
-   if (nrow(hMat) > 500) {
-      rowFontSize <- 1.5
-      curHeight <- 20
-      curWidth <- 5
-   } else if (nrow(hMat) > 70)  {
-      rowFontSize <- 3
-      curHeight <- 7
-      curWidth <- 5
-   } else if (nrow(hMat) > 50)  {
-      rowFontSize <- 3.5
-      curHeight <- 7
-      curWidth <- 5
-   } else if (nrow(hMat) > 20)  {
-      rowFontSize <- 5
-      curHeight <- 7
-      curWidth <- 5
-   } else {
-      rowFontSize <- 7
-      curHeight <- 7
-      curWidth <- 5
-   }
-   }
-
-#   show_rownames <- TRUE
-#   curHeight <- 5
-#   curWidth <- 7
-#   show_rownames <- FALSE
-
+   colAnn$celltype[grep("TrTh2", rownames(colAnn))] <- c("TrTh2")
+   colAnn$celltype[grep("iTreg", rownames(colAnn))] <- c("iTreg")
+   colAnn$celltype[grep("Th2", rownames(colAnn))] <- c("Th2")
 
    gaps_row <- c()
    if (!missing(rowGaps)) {
@@ -759,23 +657,15 @@ plotHmap.bulkReporter <- function(dat,
             fontsize       = 9,
             fontsize_row   = rowFontSize,
             main = "")
-#            main           = plotTitle)
 
    if (!repAvg) {
       pheatmap.options$annotation_col <- colAnn
       pheatmap.options$annotation_names_row <- TRUE
 
-      if (dataset == "reporter") {
-         pheatmap.options$annotation_colors <- list(
-            celltype = c("ex-Foxp3"  = "darkOrange2",
-                        "Foxp3" = "steelBlue2",
-                        "non-Foxp3"     = "gray80"))
-      } else if (dataset == "nascent") {
-         pheatmap.options$annotation_colors <- list(
+      pheatmap.options$annotation_colors <- list(
             celltype = c("TrTh2-Foxp3"  = "darkOrange2",
-                        "iTreg" = "steelBlue2",
-                        "Th2"     = "gray80"))
-      }
+                         "iTreg" = "steelBlue2",
+                         "Th2"     = "gray80"))
       pheatmap.options$annotation_legend <- TRUE
       pheatmap.options$annotation_names_col <- TRUE
    } else {
@@ -783,7 +673,6 @@ plotHmap.bulkReporter <- function(dat,
       pheatmap.options$labels_col <- labelCellTypes
    }
 
-   print(" BOUT TO TSART PHEATMAP PDF")
    outFn <- paste0(dat$specs$outDir, "/msFig", curFig, "_",nlMode,".pdf")
    pdf(outFn,
        onefile = FALSE,
@@ -792,7 +681,6 @@ plotHmap.bulkReporter <- function(dat,
        width  = curWidth)
    do.call(pheatmap, pheatmap.options)
    dev.off()
-   print(" ---> GOT BACK")
 
    curSampleList <- unique(curSampleList)
    figDescrFn <- paste0(dat$specs$outDir, "/", curFig, "_samples.txt")
@@ -826,135 +714,6 @@ makeGeoExpressionTable <- function(dat, tabName = "geoTab1") {
    close(gz1)
 
 }
-
-
-scoreSCsig.setPaths <- function(dat,
-                                baseDir,
-                                kallistoDir,
-                                sleuthDir,
-                                rnaSamplesFn,
-                                scDataDir,
-                                scDataFn,
-                                outDir       = "./") {
-
-   if (missing(dat)) dat <- list()
-
-#   library(readxl)
-
-   paths<-list()
-   paths$baseDir <- baseDir
-   paths$outDir <- outDir
-
-   if (! missing(kallistoDir)) {
-      paths$kallistoBaseDir <- paste0(paths$baseDir,"/",kallistoDir)
-      paths$sleuthBaseDir <- paste0(paths$baseDir, "/",sleuthDir)
-   }
-
-   if (! missing(rnaSamplesFn)) {
-      paths$rnaSamplesFn <- paste0(paths$baseDir, "/",rnaSamplesFn)
-   }
-
-
-# Chromium 10X setup
-   if (!missing(scDataFn)) {
-      paths$sc.dataFn <- paste0(paths$baseDir,"/", scDataFn)
-   } else {
-      paths$sc.dataDir <- paste0(paths$baseDir,"/", scDataDir)
-   }
-
-   paths$transcriptInfoFn <- paste0(paths$baseDir,
-         "/data/txInfo/GRCm38.82.FPtags.ERCC.transcript_info.txt")
-   paths$sc.fn_tx_gene_map <- paste0(specs$baseDir,
-                                     "/data/kallisto_files/tx_gene_name_map.txt")
-   paths$sc.geneInfoFn  <- paste0(paths$baseDir,"/data/cellranger_files.v2.0.0/txInfo/genes.tsv")
-
-   dat$paths <- paths
-   return(dat)
-
-}
-
-
-scoreSCsig.setSpecs <- function(dat,
-                                deg.celltypePairs,
-                                deg.geneLists,
-                                sc.clusterType,
-                                manualLibNames,
-                                experimentName,
-                                keep.sc.samples,
-                                skip.sc.samples){
-
-#   library(readxl)
-
-   specs <- list()
-   specs$thresh<-list()
-   specs$thresh$exprGenes.minTPM <- 10
-   specs$thresh$deGenes.FC <- 1.5
-   specs$thresh$sleuth.qval <- 0.05
-   specs$thresh$maxGenePeakDist <- 50000
-
-   specs$thresh$GOstats.pvalue <- 0.001
-
-   specs$transcriptInfo <- read.table(dat$paths$transcriptInfoFn,
-      quote = "", header = TRUE, sep = "\t", as.is = TRUE)
-   specs$geneInfo <- unique(specs$transcriptInfo[, c("gene_id", "gene_name")])
-
-
-   if ("rnaSamplesFn" %in% names(dat$paths)) {
-      print("LOADING RNA SAMPLES")
-      specs$rnaSamples <- read.table( dat$paths$rnaSamplesFn,
-                                   header=TRUE, sep="\t", as.is=TRUE )
-      print(" DONE!")
-# Remove chromium entries
-      specs$rnaSamples <- specs$rnaSamples[specs$rnaSamples$libraryType != "chromium",]
-   }
-
-   if (!missing(deg.celltypePairs)) { specs$deg.celltypePairs <- deg.celltypePairs }
-   if (!missing(deg.geneLists)) { specs$deg.geneLists <- deg.geneLists }
-
-#   specs$rnaSamples$cellType <- gsub(".si[0-9]+$", "", specs$rnaSamples$sampleName)
-
-
-
-   if (!missing(manualLibNames)) { #to assign names by X to BARCODE-X cells
-      specs$manualLibNames <- manualLibNames }
-
-   if (!missing(keep.sc.samples)) {
-      specs$keep.sc.samples <- keep.sc.samples }
-
-   if (!missing(skip.sc.samples)) {
-      specs$skip.sc.samples <- skip.sc.samples }
-
-   if (!missing(sc.clusterType)) {
-      specs$sc.clusterType <- sc.clusterType }
-
-   if (!missing(experimentName)) {
-      specs$experimentName <- experimentName
-   } else {
-      specs$experimentName <- "alldata"
-   }
-
-
-# Chromium 10X setup
-
-   specs$sc <- list()
-   if ("sc.dataDir" %in% names(dat$paths)) {
-      specs$sc$dataType <- "cellranger"
-   } else {
-      specs$sc$dataType <- "seurat"
-   }
-
-   if (file.exists(dat$paths$sc.fn_tx_gene_map)) {
-   specs$sc$txGeneMap <- read.table(dat$paths$sc.fn_tx_gene_map,
-                                    header=FALSE,sep=" ")
-
-   colnames(specs$sc$txGeneMap) <- c("gene_id", "tx_id", "gene_name")
-   }
-
-   dat$specs <- specs
-   return(dat)
-
-}
-
 
 
 readSleuthOutput <- function(comparisonName, resultsDir){
