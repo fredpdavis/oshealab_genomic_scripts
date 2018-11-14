@@ -272,18 +272,40 @@ defineDEG <- function(dat,
 
 #ORIG   for (cellPair in celltypePairs)
    for (i in 1:nrow(dat$specs$rnaComps)) {
-      cellPair <- 
+      curComp <- dat$specs$rnaComps[i]
 
-# HERENOW 181114_1242
-      sampleGroup1 <- dat$specs$rnaComps$sampleGroup1[i]
-   
-      print(paste0("comparing ",cellPair$cellType1," to ",cellPair$cellType2))
-      cell12 <- paste0(cellPair$cellType1,"_vs_",cellPair$cellType2)
-      cell1 <- cellPair$cellType1
-      cell2 <- cellPair$cellType2
-
+      cell1 <- dat$specs$rnaComps[i,"group1name"]
+      cell2 <- dat$specs$rnaComps[i,"group2name"]
+      cell12 <- paste0(cell1,"_vs_",cell2)
+      print(paste0("comparing ",cell1," to ",cell2))
 
 ## HERENOW: more flexible sample specs
+
+      groupSamples <- list()
+      for (j in c(1,2)) {
+         curCriteria  <- dat$specs$rnaComps[i,paste0("group",j,"criteria")]
+
+         criteriaBits <- unlist(strsplit(curCriteria,split=";"))
+         orSamples <- c()
+         for (k in 1:length(criteriaBits)) {
+            curBits <- unlist(strsplit(criteriaBits[k],split=","))
+
+            andSamples <- c()
+            for (l in 1:length(curBits)) {
+               featValPair <- strsplit(curBits[l], split="=")
+               curSamples <- allSamples$sampleName[allSamples[,featValPair[1]] == featValPair[2]]
+               if (l == 1) {
+                  andSamples <- curSamples
+               } else {
+                  andSamples <- intersect(andSamples, curSamples)
+               }
+            }
+            orSamples <- union(orSamples, andSamples)
+         }
+         groupSamples[[j]] <- orSamples
+      }
+#HERENOW 181114_1418
+
 
       samples1   <- allSamples$sampleName[allSamples$cellType == cellPair$cellType1 &
                                           allSamples$dataType2 == cellPair$dataType2]
