@@ -265,16 +265,14 @@ the sample sheet
 ```
 shell> cat metadata/rnaseq_comparisons.txt
 
-cytokineStim=nc	cytokineStim=IFNg_72h
+group1name      group1criteria  group2name      group2criteria
+no.cytokine     cytokineStim=nc gamma   cytokineStim=IFNg_72h
 ```
 
 - If you want to specify your samples using more than one feature, use
 commas to express logical AND, and semicolon to express logical OR.
-AND's will be interpreted first.
-
-```
-cytokineStim=nc,cellType=CD4	cytokineStim=nc,cellType=CD8
-```
+AND's will be interpreted first. For example, `cytokineStim=nc,cellType=CD4;celltype=CD8`
+will pick either CD4 samples without cytokine stimulation OR any CD8 samples.
 
 ### 3. Retrieve and prepare genome and gene information
 

@@ -111,18 +111,18 @@ makeFigures <- function(dat, figList) {
    }
 
    if (any(c("all","2") %in% figList)) {
-      print("Sample correlation heatmap")
+      print("Plot: Sample correlation heatmap")
       makeCorrHeatmap(dat)
    }
 
    if (any(c("all","3") %in% figList)) {
-      print("Variable gene heatmap")
+      print("Plot: Variable gene heatmap")
       makeVarGeneHeatmap(dat)
    }
 
 # GEO supp expression table
    if (any(c("all","GEO_table") %in% figList)) {
-      print("Gene expresion table")
+      print("Table: Gene expresion table")
       makeGeoExpressionTable(dat)
    }
 
