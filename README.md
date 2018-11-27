@@ -447,14 +447,15 @@ R
 - Make a basic set of figures:
 
 ```
-> tx <- makeFigures(dat)
+> makeFigures(dat)
 ```
 
-- This command will make of three figures:
+- This command will make these basic figures:
 
-    1. heatmap of correlation between transcript abundances across all pairs of samples.
-    2. expression scatterplots showing condition-average expression level between pairs of samples specified in the rnaseq_comparisons.txt file
-    3. heatmap of differentially expressed genes
+    1. heatmap of variably expressed genes across all samples. hierarchicaly clustered.
+    2. heatmap of correlation between transcript abundances across all pairs of samples.
+    3. scatterplots of estimated transcript abundance between pairs of samples specified in rnaseq_comparisons.txt, highlighting differentially expressed genes
+    4. heatmap of differentially expressed genes
 
 - You can also customize the figures to make them more useful. For example, if you'd like to annotate the correlation heatmap with sample properties (specified in the rnaseq_samples.txt file):
 
@@ -481,6 +482,12 @@ tx <- plotHmap.deg(dat, sampleAnnotate=c("cytokineStim"))
 
 ```
 tx <- plotHmap.deg(dat, repAvg = list(unstim = c("unstim_rep1", "unstim_rep2"), gamma=c("IFNg_72h_rep1", "IFNg_72h_rep2")))
+```
+
+- To add sample properties to the variable gene heatmap (made by makeVarGeneHeatmap()), you can specify what properties to show:
+
+```
+tx <- makeVarGeneHeatmap(dat,sampleAnnotate=c("cytokineStim"))
 ```
 
 - To view the figures, secury copy (scp) the whole directory to your local machine's Desktop. Open a new terminal window on your local machine and type:

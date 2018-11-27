@@ -44,7 +44,8 @@ startup <- function() {
 
 
 
-main <- function(dat, makeFigs = TRUE, returnData = TRUE, testMode=FALSE) {
+main <- function(dat,
+                 makeFigs = TRUE, returnData = TRUE, testMode=FALSE, ...) {
 
    startup()
 
@@ -52,7 +53,7 @@ main <- function(dat, makeFigs = TRUE, returnData = TRUE, testMode=FALSE) {
 
    if (missing(dat))                    dat <- list()
 
-   if (! "specs" %in% names(dat))       dat$specs <- setSpecs()
+   if (! "specs" %in% names(dat))       dat$specs <- setSpecs(...)
 
    if (! "edat" %in% names(dat)) {
       print("Loading expression")
@@ -62,7 +63,7 @@ main <- function(dat, makeFigs = TRUE, returnData = TRUE, testMode=FALSE) {
    }
 
    if (! "deg" %in% names(dat)) {
-      print("Loading differentially expressed genes")
+      print("Identifying/Loading differentially expressed genes")
       dat <- defineDEG(dat)
       if (returnData)    return(dat)
    }
@@ -73,6 +74,7 @@ main <- function(dat, makeFigs = TRUE, returnData = TRUE, testMode=FALSE) {
    }
 
    if (makeFigs) {
+      print("Making figures")
       makeFigures(dat)
    }
 
@@ -100,22 +102,28 @@ makeFigures <- function(dat, figList) {
 
    if (missing(figList)) {figList <- "all"}
 
-# Table of DEG genes
-
-# Scatterplot of all pairwise comparisons, highlighitng/#'ing DEG's and naming top-10s
-
 # Heatmap of DEG genes
    if (any(c("all","1") %in% figList)) {
-       plotHmap.deg(dat$dat.bulk,
+      print("Plot: DEG heatmap")
+      plotHmap.deg(dat,
                     figName    = "1",
-                    nlMode     = "fracMax",
-                    clusterRows   = TRUE,
                     show_rownames = FALSE)
+   }
+
+   if (any(c("all","2") %in% figList)) {
+      print("Sample correlation heatmap")
+      makeCorrHeatmap(dat)
+   }
+
+   if (any(c("all","3") %in% figList)) {
+      print("Variable gene heatmap")
+      makeVarGeneHeatmap(dat)
    }
 
 # GEO supp expression table
    if (any(c("all","GEO_table") %in% figList)) {
-      makeGeoExpressionTable(dat$dat.bulk)
+      print("Gene expresion table")
+      makeGeoExpressionTable(dat)
    }
 
 }
@@ -268,7 +276,8 @@ loadExpr <- function(specs, printTables = TRUE){
 
 
 defineDEG <- function(dat,
-                      plotDEG=TRUE ){
+                      plotDEG=TRUE,
+                      testMode=TRUE){
 
 # consistent DEG pairwise SLEUTH comparison
 
@@ -424,16 +433,53 @@ defineDEG <- function(dat,
          exprGenes.down))
 
       if (plotDEG) {
+
+         if (testMode) {
+      genes.deg[[cell12]]$upGenes.minExpr <- c("Jak1", "Jak2", "Jak3", "Jak4")
+      genes.deg[[cell12]]$downGenes.minExpr <- c("Tbx21", "Foxp3", "Dusp10")
+         }
+
+         exprRange <- range(1 + comparisonFC$tpm.celltype1,
+                            1 + comparisonFC$tpm.celltype2)
+
+   tmppngfn <- tempfile()
+   png(file = tmppngfn, height = 3.1, width = 3.1, units = "in", res = 300,
+       family = "ArialMT")
+   par(mar = c(0, 0,0, 0))
+         plot(1 + comparisonFC$tpm.celltype2,
+              1 + comparisonFC$tpm.celltype1,
+              ann=FALSE,axes=FALSE,
+              pch=20, cex=0.5, log="xy", col="grey",las=1,
+              xlab = paste0(cell2," (TPM + 1)"),
+              ylab = paste0(cell1," (TPM + 1)"),
+              xlim=exprRange,
+              ylim=exprRange,
+              main="")
+   dev.off()
+   pngbg <- readPNG(tmppngfn)
+   pngbg <- as.raster(pngbg)
+   
          outFn <- paste0(dat$specs$outDir,"/DEGscatter.",cell12,".pdf")
-         pdf(outFn)
+         pdf(outFn, height=3.5,width=3.5)
+   par(mar = c(3.75, 3.75, 0.5, 0.5),
+       mgp = c(2, 0.6, 0),
+       cex = 1, cex.axis = 0.8, cex.lab = 1)
          plot(1 + comparisonFC$tpm.celltype2,
               1 + comparisonFC$tpm.celltype1,
               pch=20,
               cex=0.5,
               log="xy",
-              xlab = paste0(cell2," (TPM)"),
-              ylab = paste0(cell1," (TPM)"),
-              main=cell12)
+              type="n",
+              las=1,
+              xlab = paste0(cell2," (TPM + 1)"),
+              ylab = paste0(cell1," (TPM + 1)"),
+              xlim=exprRange,
+              ylim=exprRange,
+              main="")
+   lim<-par()
+   rasterImage(pngbg, 10^lim$usr[1], 10^lim$usr[3],
+                      10^lim$usr[2], 10^lim$usr[4])
+
          degGenes.up <- comparisonFC[comparisonFC$gene_name %in%
                                      genes.deg[[cell12]]$upGenes.minExpr,]
          degGenes.down  <- comparisonFC[comparisonFC$gene_name %in%
@@ -448,6 +494,34 @@ defineDEG <- function(dat,
                 1 + degGenes.down$tpm.celltype1,
                 pch=20,cex=0.5,
                 col= "#998ec3")
+
+
+         outliers.up <- head(degGenes.up[order(degGenes.up$log2fc.celltype1_vs_celltype2),],
+                             n = 10)
+
+         outliers.down <- head(degGenes.down[order(degGenes.down$log2fc.celltype1_vs_celltype2,
+                                                   decreasing=TRUE),],
+                               n = 10)
+
+   lab_x <- c(1 + outliers.down$tpm.celltype2, 1 + outliers.up$tpm.celltype2)
+   lab_y <- c(1 + outliers.down$tpm.celltype1, 1 + outliers.up$tpm.celltype1)
+   
+   lab_text <- c(outliers.down$gene_name, outliers.up$gene_name)
+   lab_textadj <- c(rep(1, nrow(outliers.down)), rep(0, nrow(outliers.up)))
+   lab_textx <- c(rep(2.5, nrow(outliers.down)), rep(6500, nrow(outliers.up)))
+   laborder <- order(lab_y)
+   
+   texty_logo <- ( 0.15 * log(max(exprRange), base = 10))
+   texty_loginc <- ((0.75 * log(max(exprRange), base = 10)) / length(lab_y))
+
+   for (j in 1:length(laborder)) {
+      k <- laborder[j]
+      lab_texty <- (10**( (j - 1) * texty_loginc + texty_logo))
+      text(lab_textx[k], lab_texty, lab_text[k], cex = 0.5, adj = lab_textadj[k])
+      segments(lab_textx[k], lab_texty, lab_x[k], lab_y[k], lwd = 1, col = "grey")
+   }
+
+
          dev.off()
       }
    
@@ -467,11 +541,12 @@ defineDEG <- function(dat,
 
 
 
-setSpecs <- function(){
+setSpecs <- function(baseDir){
 
-   specs<-list(
-      baseDir           = c("~/data/projects/cytokineX")
-   )
+   if (missing(baseDir)) { baseDir <- "~/data/projects/cytokineX" }
+
+   specs<-list(baseDir = baseDir)
+   print(paste0("basedir = ",baseDir))
 
    specs$thresh<-list()
    specs$thresh$exprGenes.minTPM <- 10
@@ -566,6 +641,7 @@ setSpecs <- function(){
 
 }
 
+
 makeCorrHeatmap <- function(dat,
                             sampleAnnotate, #properties to show as sample annotation
                             figName = "corrHeatmap") {
@@ -623,8 +699,95 @@ makeCorrHeatmap <- function(dat,
 }
 
 
+makeVarGeneHeatmap <- function(dat,
+                            sampleAnnotate, #properties to show as sample annotation
+                            nlMode = "logMean",
+                            figName = "variableGeneHeatmap") {
+
+   eMat <- dat$edat$geneExpr[,paste0("tpm.",dat$specs$rnaSamples$sampleName)]
+   eMat <- data.frame(eMat)
+   rownames(eMat) <- paste0(dat$edat$geneExpr$gene_name,":",
+                            dat$edat$geneExpr$gene_id)
+
+   eMat <- eMat[apply(eMat,1,max) >= dat$specs$thresh$exprGenes.minTPM,]
+   eMat <- eMat[apply(eMat,1,max) >= dat$specs$thresh$deGenes.FC *
+                                     apply(eMat,1,min),]
+
+   if (nlMode == "logMean") {
+      bottomCap <- -1.5
+      topCap <- 1.5
+
+      eMat <- log2(eMat / apply(eMat, 1, mean))
+      eMat[eMat < bottomCap] <- bottomCap; eMat[eMat > topCap] <- topCap;
+      curBreaks <- seq(bottomCap, topCap, length.out = 101)
+      plotTitle  <- "Rel. expression: log2 (TPM/mean)"
+      plotColors <- colorRampPalette(c("steelBlue2", "white", "darkOrange2"))(100)
+   } else if (nlMode == "minMax") {
+      hMin <-  apply(eMat, 1, min)
+      hMax <-  apply(eMat, 1, max)
+      eMat <- (eMat - hMin) / (hMax - hMin)
+      plotTitle  <- "(TPM - min)/(max - min))"
+      curBreaks <- seq(0, 1, length.out = 101)
+      plotColors <- colorRampPalette(c("steelBlue2", "white", "darkOrange2"))(100)
+   } else if (nlMode == "fracMax") {
+      hMax <-  apply(eMat, 1, max)
+      eMat <- eMat / hMax
+      plotTitle  <- "TPM / max"
+      curBreaks <- seq(0, 1, length.out = 101)
+      plotColors <- colorRampPalette(c("white", "red"))(100)
+   }
+
+   colnames(eMat) <- gsub("tpm.","",colnames(eMat))
+
+   if (!missing(sampleAnnotate)) {
+      colAnn <- data.frame( sampleNames = colnames(eMat),
+                            stringsAsFactors = FALSE)
+      rownames(colAnn) <- colnames(eMat)
+      print(paste0("ROWNAMES COLANN=",rownames(colAnn)))
+   
+      if (!missing(sampleAnnotate)) {
+         for (curProp in sampleAnnotate) {
+            print(paste0("NOW ON ",curProp))
+            colAnn[,sampleAnnotate] <- dat$specs$rnaSamples[
+               match(rownames(colAnn),
+                     dat$specs$rnaSamples$sampleName),
+               curProp]
+         }
+      }
+      colAnn$sampleNames <- NULL
+   }
+
+   pheatmap.options <- list(eMat, fontsize_row = 4, fontsize_col = 4,
+            main = plotTitle,
+            cluster_rows = TRUE,
+            cluster_cols = TRUE,
+            border_color = NA,
+            show_rownames = FALSE,
+            show_colnames = FALSE,
+            breaks = curBreaks,
+            color = plotColors
+            )
+
+   if (!missing(sampleAnnotate)) {
+#      print(colAnn)
+      pheatmap.options$annotation_col <- colAnn
+#      pheatmap.options$annotation_row <- colAnn
+      pheatmap.options$annotation_legend <- TRUE
+      pheatmap.options$annotation_names_col <- TRUE
+   }
+
+   pdf(paste0(dat$specs$outDir, "/",
+           figName, "_varGene_heatmap.pdf"),
+       onefile = FALSE,
+       height = 5,
+       width  = 6)
+   do.call(pheatmap, pheatmap.options)
+   dev.off()
+}
+
+
 plotHmap.deg <- function(dat,
-                         nlMode = "minMax",
+                         nlMode = "logMean",
                          geneList, #used if specified; otherwise picks DEGs
                          degTypes, #if not specified, uses all DEG's
                          sampleList, #used if specified; otherwise uses DEG samples
@@ -817,6 +980,9 @@ plotHmap.deg <- function(dat,
 makeGeoExpressionTable <- function(dat, tabName = "geoTab1") {
 
    outSamples <- dat$specs$rnaSamples
+   if (!"geoName" %in% colnames(outSamples)) {
+      outSamples$geoName <- outSamples$sampleName
+   }
    sampleOrder <- order(outSamples$geoName)
 
    oldNames <- outSamples$sampleName[sampleOrder]
