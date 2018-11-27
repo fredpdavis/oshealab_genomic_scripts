@@ -1,1 +1,2 @@
-cytokineStim=nc	cytokineStim=IFNg_72h
+group1name	group1criteria	group2name	group2criteria
+no.cytokine	cytokineStim=nc	gamma	cytokineStim=IFNg_72h

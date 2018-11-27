@@ -10,7 +10,7 @@ The goal of this package is to help you analyze your genomic data in
 ## Getting started
 
 This package is written for the HPC computing environment at NIH.
-You need accounts on helix and the biowulf cluster, and sufficient disk space to
+You need accounts on the biowulf cluster, and sufficient disk space to
 deal with sequence data and the resulting analyses. Disk space varies by how
 deeply your samples were sequenced, but ~5GB/sample is a reasonable estimate.
 
@@ -143,11 +143,11 @@ options you may want to try.
 
 ### 1. Setup your project directory
 
-- Login to helix
+- Login to biowulf
 
-    - on Mac: open the Terminal program, and type `ssh helix.nih.gov`, press enter, and enter your password when prompted
+    - on Mac: open the Terminal program, and type `ssh biowulf.nih.gov`, press enter, and enter your password when prompted
 
-    - on Windows: download and run [PuTTY](https://www.putty.org) to ssh into helix.nih.gov, specifying your username and password
+    - on Windows: download and run [PuTTY](https://www.putty.org) to ssh into biowulf.nih.gov, specifying your username and password
 
 - if you don't already have one, make a projects directory on your /data share.
 
@@ -290,18 +290,27 @@ mkdir -p run/20181102.prepare_inputs
 cp src/slurm/prepare_indices.slurm.csh run/20181102.prepare_inputs
 ```
 
-- Edit the script to specify the BASEDIR
+- Switch to that directory
+
+```
+cd run/20181102.prepare_inputs
+```
+
+- Edit the script (eg with nano: `nano prepare_indices.slurm.csh`) to specify the BASEDIR. That is, change cytokineX to the name of your project:
 
 ```
 set BASEDIR="/data/davisfp/projects/cytokineX"
 ```
 
-- Submit the script to biowulf to download and process necessary files
+- Make a directory to hold the output of the script
 
 ```
-ssh biowulf.nih.gov
-cd /data/davisfp/projects/cytokineX/20181102.prepare_indices
 mkdir slurm_out
+```
+
+- Submit the script to the cluster to download and process necessary files:
+
+```
 sbatch prepare_indices.slurm.csh
 ```
 
@@ -311,35 +320,30 @@ sbatch prepare_indices.slurm.csh
 squeue -u davisfp
 ```
 
-- Once the job is done, logoff biowulf
-
-```
-logout
-```
-
 You only need to run this step once (per project). You don't need to run this
 step again if you just want to process additional samples.
 
 ### 4. Process your samples
 
-- Make a new directory and copy the next script there.
+- Make a new run directory and copy the next script there.
 
 ```
-mkdir -p run/20181102.process_samples
-cp src/slurm/process_rnaseq_samples.slurm.csh run/20181102.process_samples
+cd ..
+mkdir 20181102.process_samples
+cp ../src/slurm/process_rnaseq_samples.slurm.csh 20181102.process_samples
 ```
 
-- Edit the script to specify the BASEDIR
+- Edit the script (eg with nano: `nano process_rnaseq_samples.slurm.csh`) to specify the BASEDIR. That is, change cytokineX to the name of your project:
 
 ```
 set BASEDIR="/data/davisfp/projects/cytokineX"
 ```
 
 - Edit the script to specify which tasks to process. By default, all samples
-    listed in the metadata file will be processed. If you just want to process
-    a subset of those samples, you can specify their defining features in the
-    script
-    
+listed in the metadata file will be processed. If you just want to process
+a subset of those samples, you can specify their defining features in the
+script
+
 ```
 set SAMPLE_OPTION="-cytokine no -cellType CD4"
 ```
@@ -358,52 +362,49 @@ set SAMPLE_OPTION="-cytokine no -cellType CD4"
 #SBATCH --array=1-1
 ```
 
-- Login to biowulf and submit the jobs to 
+- Make a directory to hold the script output:
 
 ```
-ssh biowulf.nih.gov
-cd /data/davisfp/projects/cytokineX/20181102.process_samples
 mkdir slurm_out
+```
+
+- Submit the jobs to the cluster:
+
+```
 sbatch process_rnaseq_samples.slurm.csh
 ```
 
-- Check job status with `squeue`; once the job is done, logoff biowulf
+- Check job status with `squeue`
 
-```
-logout
-```
+- Browse the results directory to see the files that were generated:
 
 ### 5. Create figures and tables (__NOT YET__)
 
-__ NOTE THIS STEP IS NOT YET FINISHED __
+Now that the samples have been individually processed, we will next make some
+standard figures to see how the samples relate to one another, identify
+differentially expresed genes and create figures.
 
-The next steps of identifying differentially expresed genes and creating figures
-is performed by an R script.
+This step is implemented in an [R](https://www.r-project.org/) script. Unlike
+the slurm shell scripts in the previous steps, which we copied into the run
+directory to edit, we won't need to edit the R script and so will just run it
+where it sits in `src/R/basicRnaSeqAnalysis.R`.
 
-Unlike the shell scripts that we submitted to the cluster, I like to keep only
-one R script, exactly where it sits in `src/R/basicRnaSeqAnalysis.R`
+We will run R on the cluster -- instead of submitting a "batch" job with sbatch,
+we will use the sinteractive command to request an interactive session, meaning
+a command line prompt on a computer in the cluster.
 
-Edit this script (as you feel comfortable) to adapt it and change figures, etc.
-
-We will run R on a cluster node -- instead of submitting a "batch" job with
-sbatch, we will use sinteractive to request an interactive session. Thsi will
-basically give you a command line, but one on a much bigger machine than your
-desktop or laptop.
-
-- login to biowulf and request an interactive session
+- make an analysis directory and switch to it.
 
 ```
-ssh biowulf
-cd data/projects/cytokineX
-sinteractive --x11 --cpus-per-task=2 --mem=64g --time=24:00:00
-```
-
-- make an analysis directory
-
-```
-cd data/projects/cytokineX
+cd ../../
 mkdir -p analysis/20181102.makeFigures
 cd analysis/20181102.makeFigures
+```
+
+- request an interactive session
+
+```
+sinteractive --x11 --cpus-per-task=2 --mem=64g --time=24:00:00
 ```
 
 - load the R 'module'
@@ -412,22 +413,81 @@ cd analysis/20181102.makeFigures
 module load R
 ```
 
-- start R and generate the figures
+- start R 
 
 ```
-R> source("../../src/R/basicRnaSeqAnalysis.R")
-R> dat <- loadData()
-R> tx <- makeFigures(dat)
+R
 ```
 
-- This will create the figures in this directory
-
-- To view the figures, secury copy (scp) the whole directory to your local desktop/laptop
+- Load the R script
 
 ```
-scp -r data/projects/cytokineX/analysis/20181102.makeFigures .
+> source("../../src/R/basicRnaSeqAnalysis.R")
 ```
 
+- Load the raw data, by running the main() routine, and providing the location of your base directory:
+
+```
+> dat <- main(baseDir = "~/data/projects/cytokineX", returnData=TRUE)
+```
+
+- If you're curious what you just loaded, you can use the str() command to see what is in dat:
+
+
+```
+> str(dat)
+```
+
+- Load additional data ( differential expression calls)
+
+```
+> dat <- main(dat, returnData=TRUE)
+```
+
+- Make a basic set of figures:
+
+```
+> tx <- makeFigures(dat)
+```
+
+- This command will make of three figures:
+
+    1. heatmap of correlation between transcript abundances across all pairs of samples.
+    2. expression scatterplots showing condition-average expression level between pairs of samples specified in the rnaseq_comparisons.txt file
+    3. heatmap of differentially expressed genes
+
+- You can also customize the figures to make them more useful. For example, if you'd like to annotate the correlation heatmap with sample properties (specified in the rnaseq_samples.txt file):
+
+```
+tx <- makeCorrHeatmap(dat, sampleAnnotate=c("cytokineStim"))
+
+```
+
+This will make a heatmap where the rows and columns are annotated with different colors if they were stimulated with cytokine or not.
+
+- By default, the plotHmap.deg() routine will show all differentially expressed genes, but you can also specify your own genes like this:
+
+```
+tx <- plotHmap.deg(dat, geneList = c("Jak1", "Jak2", "Jak3", "Jak4"))
+```
+
+- You can also annotate the plotHmap.deg() heatmap with sample properties, just like for the correlation heatmap
+
+```
+tx <- plotHmap.deg(dat, sampleAnnotate=c("cytokineStim"))
+```
+
+- By default, the plotHmap.deg() routine will show individual samples, but you can also show averages across groups of samples (eg, if you want to show replicate averages).
+
+```
+tx <- plotHmap.deg(dat, repAvg = list(unstim = c("unstim_rep1", "unstim_rep2"), gamma=c("IFNg_72h_rep1", "IFNg_72h_rep2")))
+```
+
+- To view the figures, secury copy (scp) the whole directory to your local machine's Desktop. Open a new terminal window on your local machine and type:
+
+```
+scp -r data/projects/cytokineX/analysis/20181102.makeFigures ~/Desktop
+```
 
 ## Design decisions
 
@@ -437,3 +497,5 @@ scp -r data/projects/cytokineX/analysis/20181102.makeFigures .
 - annotation source/version. default ENSEMBL release 94
 - ERCC spike-ins. default add to index. if not in sample, negligible contribution anyways and can always delete them.
 - gene types. default only cDNA (protein-coding genes)
+
+

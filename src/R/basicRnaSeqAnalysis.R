@@ -44,7 +44,7 @@ startup <- function() {
 
 
 
-main <- function(dat, makeFigs = TRUE, returnData = TRUE) {
+main <- function(dat, makeFigs = TRUE, returnData = TRUE, testMode=FALSE) {
 
    startup()
 
@@ -67,6 +67,11 @@ main <- function(dat, makeFigs = TRUE, returnData = TRUE) {
       if (returnData)    return(dat)
    }
 
+   if (testMode) {
+      dat <- setTestMode(dat)
+      if (returnData)    return(dat)
+   }
+
    if (makeFigs) {
       makeFigures(dat)
    }
@@ -76,6 +81,17 @@ main <- function(dat, makeFigs = TRUE, returnData = TRUE) {
    } else {
       return(1)
    }
+
+}
+
+setTestMode <- function(dat) {
+
+   for (degType in names(dat$deg)) {
+      if (degType == "designMat") {next;}
+      dat$deg[[degType]]$upGenes.minExpr <- c("Jak1", "Jak2", "Jak3", "Jak4")
+      dat$deg[[degType]]$downGenes.minExpr <- c("Tbx21", "Foxp3", "Dusp10")
+   }
+   return(dat)
 
 }
 
@@ -89,16 +105,13 @@ makeFigures <- function(dat, figList) {
 # Scatterplot of all pairwise comparisons, highlighitng/#'ing DEG's and naming top-10s
 
 # Heatmap of DEG genes
-   if (any(c("all","2D") %in% figList)) {
+   if (any(c("all","1") %in% figList)) {
        plotHmap.deg(dat$dat.bulk,
-                    figName    = "2D",
-                    dataset    = "reporter",
+                    figName    = "1",
                     nlMode     = "fracMax",
-                    repAvg        = TRUE,
                     clusterRows   = TRUE,
                     show_rownames = FALSE)
    }
-
 
 # GEO supp expression table
    if (any(c("all","GEO_table") %in% figList)) {
@@ -121,12 +134,10 @@ loadExpr <- function(specs, printTables = TRUE){
 #FBtr0082757     1844    1595    9       0.718348
    
       kallistoDir <- specs$kallistoBaseDir
-      if (specs$rnaSamples$stranded[i] == "yes") {
-         kallistoDir <- specs$kallistoBaseDir.stranded }
 
       curAbund<-read.table(
          paste(kallistoDir,"/",
-               specs$rnaSamples$runID[i],"/",specs$rnaSamples$sampleName[i],
+               specs$rnaSamples$sampleID[i],"/",
                "/abundance.tsv",sep=""),
          header=TRUE,sep="\t",
          colClasses=c("character","NULL","NULL","numeric","numeric"))
@@ -143,6 +154,9 @@ loadExpr <- function(specs, printTables = TRUE){
          txExprMat[,col2]<-curAbund[,col2]
       }
    }
+
+   txExprMat$transcript_id <- gsub("\\.[0-9]+","",txExprMat$transcript_id)
+
    txExprMat<-merge(specs$transcriptInfo, txExprMat,
                     all.y=TRUE, by="transcript_id")
    
@@ -270,7 +284,6 @@ defineDEG <- function(dat,
 
    allSamples <- dat$specs$rnaSamples
 
-#ORIG   for (cellPair in celltypePairs)
    for (i in 1:nrow(dat$specs$rnaComps)) {
       curComp <- dat$specs$rnaComps[i]
 
@@ -279,40 +292,9 @@ defineDEG <- function(dat,
       cell12 <- paste0(cell1,"_vs_",cell2)
       print(paste0("comparing ",cell1," to ",cell2))
 
-## HERENOW: more flexible sample specs
-
-      groupSamples <- list()
-      for (j in c(1,2)) {
-         curCriteria  <- dat$specs$rnaComps[i,paste0("group",j,"criteria")]
-
-         criteriaBits <- unlist(strsplit(curCriteria,split=";"))
-         orSamples <- c()
-         for (k in 1:length(criteriaBits)) {
-            curBits <- unlist(strsplit(criteriaBits[k],split=","))
-
-            andSamples <- c()
-            for (l in 1:length(curBits)) {
-               featValPair <- strsplit(curBits[l], split="=")
-               curSamples <- allSamples$sampleName[allSamples[,featValPair[1]] == featValPair[2]]
-               if (l == 1) {
-                  andSamples <- curSamples
-               } else {
-                  andSamples <- intersect(andSamples, curSamples)
-               }
-            }
-            orSamples <- union(orSamples, andSamples)
-         }
-         groupSamples[[j]] <- orSamples
-      }
-#HERENOW 181114_1418
-
-
-      samples1   <- allSamples$sampleName[allSamples$cellType == cellPair$cellType1 &
-                                          allSamples$dataType2 == cellPair$dataType2]
-
-      samples2   <- allSamples$sampleName[allSamples$cellType == cellPair$cellType2 &
-                                          allSamples$dataType2 == cellPair$dataType2]
-
+      groupSamples <- dat$specs$degSamples[[cell12]]
+      samples1   <- groupSamples[[1]]
+      samples2   <- groupSamples[[2]]
 
       print(paste0("samples 1: ", paste0(samples1, collapse = ", ")))
       print(paste0("samples 2: ", paste0(samples2, collapse = ", ")))
@@ -326,14 +308,13 @@ defineDEG <- function(dat,
 # Weirdo sleuth access business; coefficient exists in sleuth_wt() for the 
 # condition with alphanumercally lesser name
 
-      cond1 <- paste0(1,".",cellPair$cellType1)
-      cond2 <- paste0(2,".",cellPair$cellType2)
+      cond1 <- paste0(1,".",cell1)
+      cond2 <- paste0(2,".",cell2)
          
       curSampleInfo$condition <- c(rep(cond1, length(samples1)),
                                    rep(cond2, length(samples2)))
          
       curSampleInfo$path <- paste0(dat$specs$kallistoBaseDir, "/",
-                                      curSampleInfo$runID, "/",
                                       curSampleInfo$sampleID)
 
 # sleuth info https://rawgit.com/pachterlab/sleuth/master/inst/doc/intro.html
@@ -443,7 +424,7 @@ defineDEG <- function(dat,
          exprGenes.down))
 
       if (plotDEG) {
-         outFn <- paste0(dat$paths$outDir,"/bulkDEGscatter.",cell12,".pdf")
+         outFn <- paste0(dat$specs$outDir,"/DEGscatter.",cell12,".pdf")
          pdf(outFn)
          plot(1 + comparisonFC$tpm.celltype2,
               1 + comparisonFC$tpm.celltype1,
@@ -501,11 +482,13 @@ setSpecs <- function(){
    specs$thresh$GOstats.pvalue <- 0.001
 
    specs$outDir <- paste0(specs$baseDir, "/analysis/basicFigures")
+   if (!file.exists(specs$outDir)){
+      dir.create(specs$outDir,recursive=TRUE) }
 
    specs$outExprFn <- paste0(specs$outDir, "/geneExpr.txt.gz")
 
    specs$transcriptInfo <- read.table(paste0(specs$baseDir,
-      "/data/txInfo/GRCm38.82.withpatch.ERCC.transcript_info.txt"),
+      "/data/kallisto_files.GRCm38.94/transcript_info.GRCm38.94.txt"),
       quote = "", header = TRUE, sep = "\t", as.is = TRUE)
    specs$geneInfo <- unique(specs$transcriptInfo[, c("gene_id", "gene_name")])
 
@@ -538,87 +521,196 @@ setSpecs <- function(){
    }
 
 
-   specs$transcriptInfo <- read.table(paste(specs$baseDir,
-      "/data/kallisto_files.GRCm38.94/transcript_info.GRCm38.94.txt",sep=""),
-      quote="", header=TRUE,sep="\t",as.is=TRUE)
+# Figure out what samples to compare for DEG
+
+   specs$degSamples <- list()
+   for (i in 1:nrow(specs$rnaComps)) {
+      curComp <- specs$rnaComps[i]
+
+      cell1 <- specs$rnaComps[i,"group1name"]
+      cell2 <- specs$rnaComps[i,"group2name"]
+      cell12 <- paste0(cell1,"_vs_",cell2)
+      print(paste0("comparing ",cell1," to ",cell2))
+
+      groupSamples <- list()
+      for (j in c(1,2)) {
+         curCriteria  <- specs$rnaComps[i,paste0("group",j,"criteria")]
+
+         criteriaBits <- unlist(strsplit(curCriteria,split=";"))
+         orSamples <- c()
+         for (k in 1:length(criteriaBits)) {
+            curBits <- unlist(strsplit(criteriaBits[k],split=","))
+
+            andSamples <- c()
+            for (l in 1:length(curBits)) {
+               featValPair <- unlist(strsplit(curBits[l], split="="))
+               curSamples <- specs$rnaSamples$sampleName[
+                              specs$rnaSamples[,featValPair[1]] == featValPair[2]]
+               if (l == 1) {
+                  andSamples <- curSamples
+               } else {
+                  andSamples <- intersect(andSamples, curSamples)
+               }
+            }
+            orSamples <- union(orSamples, andSamples)
+         }
+         groupSamples[[j]] <- orSamples
+         print(paste0("Critera: ",curCriteria))
+         print(paste0("Matching samples: ", paste0(orSamples,collapse=", ")))
+      }
+      specs$degSamples[[cell12]] <- groupSamples
+
+   }
 
    return(specs)
 
 }
 
+makeCorrHeatmap <- function(dat,
+                            sampleAnnotate, #properties to show as sample annotation
+                            figName = "corrHeatmap") {
+
+   eMat <- dat$edat$geneExpr[,paste0("tpm.",dat$specs$rnaSamples$sampleName)]
+
+   eMat <- eMat[apply(eMat,1,max) >= dat$specs$thresh$exprGenes.minTPM,]
+
+   eMat <- log2(1 + eMat)
+   corMat <- cor(eMat)
+   colnames(corMat) <- gsub("tpm.","",colnames(corMat))
+   rownames(corMat) <- gsub("tpm.","",rownames(corMat))
+
+   if (!missing(sampleAnnotate)) {
+      colAnn <- data.frame( sampleNames = colnames(corMat),
+                            stringsAsFactors = FALSE)
+      rownames(colAnn) <- colnames(corMat)
+      print(paste0("ROWNAMES COLANN=",rownames(colAnn)))
+   
+      if (!missing(sampleAnnotate)) {
+         for (curProp in sampleAnnotate) {
+            print(paste0("NOW ON ",curProp))
+            colAnn[,sampleAnnotate] <- dat$specs$rnaSamples[
+               match(rownames(colAnn),
+                     dat$specs$rnaSamples$sampleName),
+               curProp]
+         }
+      }
+      colAnn$sampleNames <- NULL
+   }
+
+   pheatmap.options <- list(corMat, fontsize_row = 4, fontsize_col = 4,
+            main = "Pearson correlation of log2(TPM + 1)",
+            border_color = NA,
+            show_rownames = FALSE,
+            show_colnames = FALSE,
+            color = colorRampPalette(c("white", "#008500"))(50)
+            )
+
+   if (!missing(sampleAnnotate)) {
+      pheatmap.options$annotation_col <-  colAnn
+      pheatmap.options$annotation_row <- colAnn
+      pheatmap.options$annotation_legend <- TRUE
+      pheatmap.options$annotation_names_col <- TRUE
+   }
+#   return(list(corMat=corMat, colAnn = colAnn))
+
+   pdf(paste0(dat$specs$outDir, "/",
+           figName, "_correlation_heatmap.pdf"),
+       onefile = FALSE,
+       height = 5,
+       width  = 6)
+   do.call(pheatmap, pheatmap.options)
+   dev.off()
+}
+
 
 plotHmap.deg <- function(dat,
                          nlMode = "minMax",
-                         geneList,
+                         geneList, #used if specified; otherwise picks DEGs
+                         degTypes, #if not specified, uses all DEG's
+                         sampleList, #used if specified; otherwise uses DEG samples
+                         sampleAnnotate, #properties to show as sample annotation
                          show_rownames = TRUE,
                          clusterCols = FALSE,
                          clusterRows = TRUE,
                          rowFontSize = 2,
-                         curHeight = 3,
-                         curWidth = 1.5,
+                         curHeight = 5,
+                         curWidth = 5,
                          rowGaps,
-                         repAvg = FALSE,
+                         repAvg, #named list of sample groups, if specified, show average across groups, rather than individual samples
                          figName = "deg_hmap"
                          ) {
 
 # PURPOSE: make heatmap of bulk reporter RNA-seq data from lung
 
+# By Default: show DEG separately for all pairwise comparisons
+
    curFig <- figName
 
-   curCellTypes <- c("iTreg", "TrTh2", "Th2")
-   labelCellTypes <- c("iTreg", "eF-Treg", "Th2")
-   dataType2 <- "nascent"
-   degTypes <-  c( "Th2_vs_TrTh2", "iTreg_vs_TrTh2")
-
-
-   curSampleList <- dat$specs$rnaSamples[dat$specs$rnaSamples$dataType2 == dataType2 &
-                                      dat$specs$rnaSamples$cellType %in% curCellTypes,]
-
-   curSamples <- curSampleList$sampleName
-   tpmCols <- paste0("tpm.", curSamples)
-
+# Genes: if geneList specified, use it;
+#        else if degTypes specified, use only specified DEG's
+#        else, use all DEGs
+#
+# Samples: if sampleList specified, use it;
+#          else, if degTypes specified, use only those samples
+#          else, use all DEG compared samples
 
    if (missing(geneList)) {
+      if (missing(degTypes)) {
+         degTypes <- names(dat$specs$degSamples)
+      }
       geneList <- c()
-      for (comparison in degTypes) {
-         geneList <- c(geneList, dat$deg[[comparison]]$upGenes.minExpr,
-                                 dat$deg[[comparison]]$downGenes.minExpr)
+      for (degType in degTypes) {
+         geneList <- c(geneList, dat$deg[[degType]]$upGenes.minExpr,
+                                 dat$deg[[degType]]$downGenes.minExpr)
       }
       geneList <- unique(geneList)
    }
 
+   if (missing(sampleList)) {
+      if (missing(degTypes)) {
+         degTypes <- names(dat$specs$degSamples)
+      }
+
+      sampleList <- c()
+      for (degType in degTypes) {
+         sampleList <- c(sampleList, dat$specs$degSamples[[degType]][[1]],
+                                     dat$specs$degSamples[[degType]][[2]])
+      }
+      sampleList <- sort(unique(sampleList))
+   }
+   tpmCols <- paste0("tpm.", sampleList)
 
 
    origExpr <- dat$edat$geneExpr[,c("gene_name","gene_id",tpmCols)]
+   print(head(origExpr))
+
+
+   print(geneList)
 
    hMat <- as.data.frame(origExpr[
       match(geneList[geneList %in% origExpr$gene_name], origExpr$gene_name),
       c("gene_name", "gene_id", tpmCols)])
    rownames(hMat) <- paste0(hMat$gene_name, ":", hMat$gene_id)
+
    rowLabels <- hMat$gene_name
    hMat$gene_name <- NULL
    hMat$gene_id <- NULL
 
-
-   if (repAvg) {
+   if (!missing(repAvg)) {
       newTpmCols <- c()
-      for (celltype in curCellTypes) {
-         curTypeSamples <- dat$specs$rnaSamples$sampleName[
-            dat$specs$rnaSamples$dataType2 == dataType2 &
-            dat$specs$rnaSamples$cellType == celltype]
-
+      for (celltype in names(repAvg)) {
+         curTypeSamples <- repAvg[[celltype]]
          newTpmCol <- paste0("meantpm.",celltype)
          newTpmCols <- c(newTpmCols, newTpmCol)
 
          hMat[,newTpmCol] <- rowMeans(hMat[,paste0("tpm.",curTypeSamples)])
       }
       hMat <- hMat[,newTpmCols]
+      print(newTpmCols)
    }
 
    hMat <- as.matrix(hMat)
-
    hMat <- (1 + hMat)
-
 
    if (nlMode == "logMean") {
       bottomCap <- -1.5
@@ -644,18 +736,27 @@ plotHmap.deg <- function(dat,
       plotColors <- colorRampPalette(c("white", "red"))(100)
    }
 
+   colnames(hMat) <- gsub("tpm.","",colnames(hMat))
 
-   
-   colAnn <- data.frame(
-                      celltype = rep("X", ncol(hMat)),
-                      stringsAsFactors = FALSE)
-   rownames(colAnn) <- colnames(hMat)
-   print(paste0("COLUMN NAMES FOR ANNITATION"))
-   print(rownames(colAnn))
 
-   colAnn$celltype[grep("TrTh2", rownames(colAnn))] <- c("TrTh2")
-   colAnn$celltype[grep("iTreg", rownames(colAnn))] <- c("iTreg")
-   colAnn$celltype[grep("Th2", rownames(colAnn))] <- c("Th2")
+   if (!missing(sampleAnnotate)) {
+      colAnn <- data.frame( sampleNames = colnames(hMat),
+                            stringsAsFactors = FALSE)
+      rownames(colAnn) <- colnames(hMat)
+      print("rownames(colAnn):")
+      print(rownames(colAnn))
+
+      for (curProp in sampleAnnotate) {
+         print(paste0("NOW ON ",curProp))
+         colAnn[,sampleAnnotate] <- dat$specs$rnaSamples[
+            match(rownames(colAnn),
+                  dat$specs$rnaSamples$sampleName),
+            curProp]
+      }
+      colAnn$sampleNames <- NULL
+      print("Sample Annotations:")
+      print(colAnn)
+   }
 
    gaps_row <- c()
    if (!missing(rowGaps)) {
@@ -678,21 +779,20 @@ plotHmap.deg <- function(dat,
             border_color = NA,
             fontsize       = 9,
             fontsize_row   = rowFontSize,
-            main = "")
+            main = nlMode)
 
-   if (!repAvg) {
+   if (missing(repAvg) & !missing(sampleAnnotate)) {
       pheatmap.options$annotation_col <- colAnn
       pheatmap.options$annotation_names_row <- TRUE
 
-      pheatmap.options$annotation_colors <- list(
-            celltype = c("TrTh2-Foxp3"  = "darkOrange2",
-                         "iTreg" = "steelBlue2",
-                         "Th2"     = "gray80"))
+#      pheatmap.options$annotation_colors <- list(
+#            celltype = c("TrTh2-Foxp3"  = "darkOrange2",
+#                         "iTreg" = "steelBlue2",
+#                         "Th2"     = "gray80"))
       pheatmap.options$annotation_legend <- TRUE
       pheatmap.options$annotation_names_col <- TRUE
    } else {
       pheatmap.options$show_colnames <- TRUE
-      pheatmap.options$labels_col <- labelCellTypes
    }
 
    outFn <- paste0(dat$specs$outDir, "/msFig", curFig, "_",nlMode,".pdf")
@@ -704,9 +804,10 @@ plotHmap.deg <- function(dat,
    do.call(pheatmap, pheatmap.options)
    dev.off()
 
-   curSampleList <- unique(curSampleList)
+   curSampleInfo <- dat$specs$rnaSamples[dat$specs$rnaSamples$sampleName %in%
+                                         sampleList,]
    figDescrFn <- paste0(dat$specs$outDir, "/", curFig, "_samples.txt")
-   write.table(curSampleList, figDescrFn,
+   write.table(curSampleInfo, figDescrFn,
                row.names = FALSE, col.names = FALSE, quote = FALSE)
 
 }
@@ -796,12 +897,12 @@ writeSleuthOutput <- function(comparisonName,
 # Write gene list to disk
    if (!(is.null(upGenes))){
       upFn<-paste0(outDir,"/upGenes.txt")
-      write.table(upGenes, file=upFn, quote=FALSE, row.names=FALSE)
+      write.table(upGenes, file=upFn, quote=FALSE, row.names=FALSE,col.names=FALSE)
    }
 
    if (!(is.null(downGenes))){
       downFn<-paste0(outDir,"/downGenes.txt")
-      write.table(downGenes, file=downFn,quote=FALSE, row.names=FALSE)
+      write.table(downGenes, file=downFn,quote=FALSE, row.names=FALSE,col.names=FALSE)
    }
 
 # Put file down saying run done
