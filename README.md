@@ -7,7 +7,7 @@ Any questions, contact fred.davis@nih.gov
 The goal of this package is to help you analyze your genomic data in 
 (1) well-documented, (2) easy to reproduce, and (3) standard way 
 
-## Getting started
+## 1. What do I need to get started?
 
 This package is written for the HPC computing environment at NIH.
 You need accounts on the biowulf cluster, and sufficient disk space to
@@ -16,9 +16,9 @@ deeply your samples were sequenced, but ~5GB/sample is a reasonable estimate.
 
 Request your account [here](https://hpc.nih.gov/docs/accounts.html)
 
-## General advice for computational work
+## 2. General advice for computational work
 
-### 1. Take responsibility.
+### 2.1. Take responsibility.
 
 Neither the experiment nor the analysis is complicated -- thousands of
 people have done RNA-seq before -- but, you still have to invest time to
@@ -29,7 +29,7 @@ the analysis, keep reading or asking others until you can.
 This package is meant to help you get started -- not to offload your
 responsibility, or to substitute for your thinking.
 
-### 2. Write everything down.
+### 2.2. Write everything down.
 
 Meticulous notes are just as critical for computational work as they are for
 experimental work. I keep records in three ways:
@@ -48,7 +48,7 @@ recommend you keep eletronic notes. When you want to remember what commands
 you tried, or what analysis you were working on Monday two weeks ago, you
 are unlikely to remember accurately unless you can look back at notes.
 
-### 3. Trust no one, especially yourself
+### 2.3. Trust no one, especially yourself
 
 This is of course an exaggeration -- ultimately you are trusting multiple
 layers of software that operate the sequencer through to the programs
@@ -57,13 +57,13 @@ Don't over-interpret or assume your results are correct: lots of things can
 and do go wrong. Do you have positive and negative controls? If something
 looks weird, it probably is.
 
-### 4. Look inside.
+### 2.4. Look inside.
 
 Scripts are just text files -- view them in a text editor, or at the command
 line using the `less FILENAME` command, to see the commands that are being
 run.
 
-### 5. Be tidy.
+### 2.5. Be tidy.
 
 #### i. keep an organized directory structure.
 
@@ -93,11 +93,9 @@ often change these kinds of characters to curly quotes that will break the
 command -- this is a problem when eg, you try to copy and paste a command into
 a script that you are editing, or into the terminal to test a command.
 
-## RNA-seq
+## 3. RNA-seq analysis
 
-### Goal
-
-We will focus on the most routine (and often most informative) analyses.
+The scripts in this package will perform the most routine (and often most informative) analyses:
 
 1. estimating transcript abundance (= expression level)
 
@@ -109,8 +107,6 @@ We will not cover the many other kinds of analyses you can perform on RNA-seq
 measurements, including identifying alternative splicing events, estimating
 nascent transcription, or evaluating more complex experimental designs.
 
-### Data sources
-
 This package uses the following external data sources. __You don't need to download these__, as this package either comes with or will retrieve the appropriate files.
 
 | data set                                                                                      | purpose                                       |
@@ -118,9 +114,10 @@ This package uses the following external data sources. __You don't need to downl
 | [ENSEMBL GRCm38.94 release94](https://useast.ensembl.org/Mus_musculus/Info/Index)             | genome sequence, gene annotations             |
 | [Life Tech: ERCC92](https://assets.thermofisher.com/TFS-Assets/LSG/manuals/ERCC92.zip)        | synthetic spike-in sequences, concentratsion  |
 
-### Software
 
 This package uses the following underlying tools to analyze RNA-seq data.
+__You don't need to download these__, as they are already installed on the NIH
+HPC and accessible through their very well maintained system of ['modules'](https://hpc.nih.gov/apps/modules.html)
 
 | software                                                      | purpose                                                   |
 |---------------------------------------------------------------|-----------------------------------------------------------|
@@ -130,18 +127,14 @@ This package uses the following underlying tools to analyze RNA-seq data.
 | [sleuth 0.29](https://pachterlab.github.io/sleuth/)           | R package for differential expression analysis            |
 | [R 3.5.0](https://www.r-project.org)                          | creating figures, and running sleuth                      |
 
-__You don't need to download these__, as they are already installed on the NIH HPC
-and accessible through their very well maintained system of
-['modules'](https://hpc.nih.gov/apps/modules.html)
-
-These programs offer many different options -- the scripts in this package use a
-particular incantation of these programs. As you get more comfortable with the
-analysis, look inside the scripts and study the specific options used for each
-program, and then read their manuals to understand what each does and what other
+These programs offer lots of options -- this package uses particular
+incantations of each, but as you get more comfortable with the analysis, look
+inside the scripts to see what specific options are used for each program, and
+then read the program manuals to understand what each does and what other
 options you may want to try.
 
 
-### 1. Setup your project directory
+### 3.1. Setup your project directory
 
 - Login to biowulf
 
@@ -169,7 +162,7 @@ cd /data/davisfp/projects
 git clone https://github.com/fredpdavis/oshealab_genomic_scripts.git
 ```
 
-- rename to your project name, cytokineX in this example:
+- rename to your project name, cytokineX in this example. __NOTE: REPLACE cytokineX with your project name__
 
 ```
 mv oshealab_genomic_scripts cytokineX
@@ -187,12 +180,12 @@ cd cytokineX
 tree .
 ```
 
-### 2. Prepare your input files
+### 3.2. Prepare your input files
 
 Now that you have a set of scripts and basic directory structure, you can start
 using it to analyze your own data.
 
-#### Get FASTQ sequence files
+#### 3.2.1 Get FASTQ sequence files
 
 For testing, I provide four small fastq files-- you can delete if you want.
 
@@ -219,9 +212,13 @@ named by sequencing run identifiers (if sequenced locally), or by author if
 the FASTQ comes from a published paper.
 
 
-#### Edit the sample sheet `metadata/rnaseq_samples.txt`
+#### 3.2.2 Edit the sample sheet `metadata/rnaseq_samples.txt`
+
+- This file describes all of your RNA-seq samples.
 
 - This is a tab-delimited text file. Make sure you use tab's, __NOT SPACES__
+
+- Each line represents an RNA-seq sample.
 
 - This package includes an example file listing the test samples
 
@@ -251,13 +248,13 @@ editor: `nano metadata/rnaseq_samples.txt`
 - expects to find fastq files in `data/fastq/<runID>/<fastqName>`
 
 
-#### Edit the comparisons file, listing pairs of conditions to compare:
+#### 3.2.3 Edit the comparisons file `metadata/rnaseq_comparisons.txt`
 
-- This is a tab-delimited text file. Make sure you use tab's, __NOT SPACES__
+- This file lists groups of samples that you'd like to compare
+
+- This is a 4-column tab-delimited text file. Make sure you use tab's, __NOT SPACES__
 
 - Each line represents a pairwise comparison
-
-- Two columns, each specifying the samples to compare
 
 - Samples can be specified by sampleName or by other features specified in
 the sample sheet
@@ -269,12 +266,15 @@ group1name      group1criteria  group2name      group2criteria
 no.cytokine     cytokineStim=nc gamma   cytokineStim=IFNg_72h
 ```
 
+- Edit this file to describe the comparisons you'd like to make:
+`nano metadata/rnaseq_comparisons.txt`
+
 - If you want to specify your samples using more than one feature, use
 commas to express logical AND, and semicolon to express logical OR.
 AND's will be interpreted first. For example, `cytokineStim=nc,cellType=CD4;celltype=CD8`
 will pick either CD4 samples without cytokine stimulation OR any CD8 samples.
 
-### 3. Retrieve and prepare genome and gene information
+### 4. Retrieve and prepare genome and gene information
 
 This step will retrieve the files necessary to process mouse data. Take a look
 inside the script to get a sense of what data is being retrieved. If you ever
@@ -321,7 +321,7 @@ squeue -u davisfp
 You only need to run this step once (per project). You don't need to run this
 step again if you just want to process additional samples.
 
-### 4. Process your samples
+### 5. Process your samples
 
 - Make a new run directory and copy the next script there.
 
@@ -376,7 +376,7 @@ sbatch process_rnaseq_samples.slurm.csh
 
 - Browse the results directory to see the files that were generated:
 
-### 5. Create figures and tables (__NOT YET__)
+### 6. Create figures and tables
 
 Now that the samples have been individually processed, we will next make some
 standard figures to see how the samples relate to one another, identify
@@ -458,7 +458,7 @@ R
 - You can also customize the figures to make them more useful. For example, if you'd like to annotate the correlation heatmap with sample properties (specified in the rnaseq_samples.txt file):
 
 ```
-tx <- makeCorrHeatmap(dat, sampleAnnotate=c("cytokineStim"))
+makeCorrHeatmap(dat, sampleAnnotate=c("cytokineStim"))
 
 ```
 
@@ -467,31 +467,31 @@ This will make a heatmap where the rows and columns are annotated with different
 - By default, the plotHmap.deg() routine will show all differentially expressed genes, but you can also specify your own genes like this:
 
 ```
-tx <- plotHmap.deg(dat, geneList = c("Jak1", "Jak2", "Jak3", "Jak4"))
+plotHmap.deg(dat, geneList = c("Jak1", "Jak2", "Jak3", "Jak4"))
 ```
 
 - You can also annotate the plotHmap.deg() heatmap with sample properties, just like for the correlation heatmap
 
 ```
-tx <- plotHmap.deg(dat, sampleAnnotate=c("cytokineStim"))
+plotHmap.deg(dat, sampleAnnotate=c("cytokineStim"))
 ```
 
 - By default, the plotHmap.deg() routine will show individual samples, but you can also show averages across groups of samples (eg, if you want to show replicate averages).
 
 ```
-tx <- plotHmap.deg(dat, repAvg = list(unstim = c("unstim_rep1", "unstim_rep2"), gamma=c("IFNg_72h_rep1", "IFNg_72h_rep2")))
+plotHmap.deg(dat, repAvg = list(unstim = c("unstim_rep1", "unstim_rep2"), gamma=c("IFNg_72h_rep1", "IFNg_72h_rep2")))
 ```
 
 - To add sample properties to the variable gene heatmap (made by makeVarGeneHeatmap()), you can specify what properties to show:
 
 ```
-tx <- makeVarGeneHeatmap(dat,sampleAnnotate=c("cytokineStim"))
+makeVarGeneHeatmap(dat,sampleAnnotate=c("cytokineStim"))
 ```
 
 - To view the figures, secury copy (scp) the whole directory to your local machine's Desktop. Open a new terminal window on your local machine and type:
 
 ```
-scp -r data/projects/cytokineX/analysis/20181102.makeFigures ~/Desktop
+scp -r data/projects/cytokineX/analysis/basicFigures ~/Desktop
 ```
 
 ## Design decisions
@@ -500,7 +500,7 @@ scp -r data/projects/cytokineX/analysis/20181102.makeFigures ~/Desktop
 
 - genome version. default mm10
 - annotation source/version. default ENSEMBL release 94
-- ERCC spike-ins. default add to index. if not in sample, negligible contribution anyways and can always delete them.
+- ERCC spike-ins. by default added to index. if not used in a sample, negligible contribution anyways and can always delete them.
 - gene types. default only cDNA (protein-coding genes)
 
 
