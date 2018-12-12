@@ -12,7 +12,7 @@
 set NUMCPU=8
 set scratchdir="/lscratch/$SLURM_JOBID"
 
-set BASEDIR="/data/davisfp/projects/cytokineX"
+set BASEDIR="/data/davisfp/projects/oshealab_genomic_scripts"
 set SAMPLEINFO_FN="$BASEDIR/metadata/rnaseq_samples.txt"
 set SAMPLE_OPTION=""
 
@@ -113,6 +113,9 @@ ln -s $STAR_OUT_BW_FN $STAR_NAMED_OUT_BW_FN
 set curtime=`date`
 echo "STEP 4. PICARD QC ($curtime)"
 $PICARDSTATS_BIN $PICARDSTATS_OPTIONS
+
+#cleanup
+rm $STAR_OUT_BAM_FN $STAR_OUT_SORTED_BAM_FN $STAR_OUT_SORTED_BAI_FN
 
 set curtime=`date`
 echo "# slurm run finished on $curhost at $curtime"

@@ -1,5 +1,6 @@
 *.swp
 *.swo
+NKIL18*
 run/
 results/
 analysis/
@@ -7,3 +8,5 @@ ENSEMBL.GRCm38.94
 kallisto_files.GRCm38.94
 picard_files.GRCm38.94
 star_files.GRCm38.94
+rnaseq_samples.txt
+rnaseq_comparisons.txt

@@ -45,7 +45,8 @@ startup <- function() {
 
 
 main <- function(dat,
-                 makeFigs = TRUE, returnData = TRUE, testMode=FALSE, ...) {
+                 makeFigs = TRUE,
+                 returnData = TRUE, ...) {
 
    startup()
 
@@ -68,11 +69,6 @@ main <- function(dat,
       if (returnData)    return(dat)
    }
 
-   if (testMode) {
-      dat <- setTestMode(dat)
-      if (returnData)    return(dat)
-   }
-
    if (makeFigs) {
       print("Making figures")
       makeFigures(dat)
@@ -83,17 +79,6 @@ main <- function(dat,
    } else {
       return(1)
    }
-
-}
-
-setTestMode <- function(dat) {
-
-   for (degType in names(dat$deg)) {
-      if (degType == "designMat") {next;}
-      dat$deg[[degType]]$upGenes.minExpr <- c("Jak1", "Jak2", "Jak3", "Jak4")
-      dat$deg[[degType]]$downGenes.minExpr <- c("Tbx21", "Foxp3", "Dusp10")
-   }
-   return(dat)
 
 }
 
@@ -110,14 +95,22 @@ makeFigures <- function(dat, figList) {
                     show_rownames = FALSE)
    }
 
+# Heatmap of pairwise sample correlation
    if (any(c("all","2") %in% figList)) {
       print("Plot: Sample correlation heatmap")
       makeCorrHeatmap(dat)
    }
 
+# Heatmap of variable genes
    if (any(c("all","3") %in% figList)) {
       print("Plot: Variable gene heatmap")
       makeVarGeneHeatmap(dat)
+   }
+
+# DEG scatterplots
+   if (any(c("all","3") %in% figList)) {
+      print("Plot: DEG scatterplot and fold change cumulative distribution plots")
+      plotDEGscatters(dat)
    }
 
 # GEO supp expression table
@@ -162,8 +155,6 @@ loadExpr <- function(specs, printTables = TRUE){
          txExprMat[,col2]<-curAbund[,col2]
       }
    }
-
-   txExprMat$transcript_id <- gsub("\\.[0-9]+","",txExprMat$transcript_id)
 
    txExprMat<-merge(specs$transcriptInfo, txExprMat,
                     all.y=TRUE, by="transcript_id")
@@ -276,8 +267,7 @@ loadExpr <- function(specs, printTables = TRUE){
 
 
 defineDEG <- function(dat,
-                      plotDEG=TRUE,
-                      testMode=TRUE){
+                      plotDEG=TRUE) {
 
 # consistent DEG pairwise SLEUTH comparison
 
@@ -294,8 +284,6 @@ defineDEG <- function(dat,
    allSamples <- dat$specs$rnaSamples
 
    for (i in 1:nrow(dat$specs$rnaComps)) {
-      curComp <- dat$specs$rnaComps[i]
-
       cell1 <- dat$specs$rnaComps[i,"group1name"]
       cell2 <- dat$specs$rnaComps[i,"group2name"]
       cell12 <- paste0(cell1,"_vs_",cell2)
@@ -355,10 +343,6 @@ defineDEG <- function(dat,
          comparisonFC$tpm.celltype2 >= comparisonFC$tpm.celltype1 * 
             dat$specs$thresh$deGenes.FC ,
          "gene_name"]
-   
-      comparisonFC$log2fc.celltype1_vs_celltype2 <- round(
-         (1 + comparisonFC$tpm.celltype1) / (1 + comparisonFC$tpm.celltype2),
-         digits = 2 )
    
       if (file.exists(paste0(curSleuthPath, "/done.txt"))){
    
@@ -432,99 +416,6 @@ defineDEG <- function(dat,
          genes.deg[[cell12]]$downGenes,
          exprGenes.down))
 
-      if (plotDEG) {
-
-         if (testMode) {
-      genes.deg[[cell12]]$upGenes.minExpr <- c("Jak1", "Jak2", "Jak3", "Jak4")
-      genes.deg[[cell12]]$downGenes.minExpr <- c("Tbx21", "Foxp3", "Dusp10")
-         }
-
-         exprRange <- range(1 + comparisonFC$tpm.celltype1,
-                            1 + comparisonFC$tpm.celltype2)
-
-   tmppngfn <- tempfile()
-   png(file = tmppngfn, height = 3.1, width = 3.1, units = "in", res = 300,
-       family = "ArialMT")
-   par(mar = c(0, 0,0, 0))
-         plot(1 + comparisonFC$tpm.celltype2,
-              1 + comparisonFC$tpm.celltype1,
-              ann=FALSE,axes=FALSE,
-              pch=20, cex=0.5, log="xy", col="grey",las=1,
-              xlab = paste0(cell2," (TPM + 1)"),
-              ylab = paste0(cell1," (TPM + 1)"),
-              xlim=exprRange,
-              ylim=exprRange,
-              main="")
-   dev.off()
-   pngbg <- readPNG(tmppngfn)
-   pngbg <- as.raster(pngbg)
-   
-         outFn <- paste0(dat$specs$outDir,"/DEGscatter.",cell12,".pdf")
-         pdf(outFn, height=3.5,width=3.5)
-   par(mar = c(3.75, 3.75, 0.5, 0.5),
-       mgp = c(2, 0.6, 0),
-       cex = 1, cex.axis = 0.8, cex.lab = 1)
-         plot(1 + comparisonFC$tpm.celltype2,
-              1 + comparisonFC$tpm.celltype1,
-              pch=20,
-              cex=0.5,
-              log="xy",
-              type="n",
-              las=1,
-              xlab = paste0(cell2," (TPM + 1)"),
-              ylab = paste0(cell1," (TPM + 1)"),
-              xlim=exprRange,
-              ylim=exprRange,
-              main="")
-   lim<-par()
-   rasterImage(pngbg, 10^lim$usr[1], 10^lim$usr[3],
-                      10^lim$usr[2], 10^lim$usr[4])
-
-         degGenes.up <- comparisonFC[comparisonFC$gene_name %in%
-                                     genes.deg[[cell12]]$upGenes.minExpr,]
-         degGenes.down  <- comparisonFC[comparisonFC$gene_name %in%
-                                        genes.deg[[cell12]]$downGenes.minExpr,]
-                                 
-         points(1 + degGenes.up$tpm.celltype2,
-                1 + degGenes.up$tpm.celltype1,
-                pch=20,cex=0.5,
-                col="#f1a340")
-
-         points(1 + degGenes.down$tpm.celltype2,
-                1 + degGenes.down$tpm.celltype1,
-                pch=20,cex=0.5,
-                col= "#998ec3")
-
-
-         outliers.up <- head(degGenes.up[order(degGenes.up$log2fc.celltype1_vs_celltype2),],
-                             n = 10)
-
-         outliers.down <- head(degGenes.down[order(degGenes.down$log2fc.celltype1_vs_celltype2,
-                                                   decreasing=TRUE),],
-                               n = 10)
-
-   lab_x <- c(1 + outliers.down$tpm.celltype2, 1 + outliers.up$tpm.celltype2)
-   lab_y <- c(1 + outliers.down$tpm.celltype1, 1 + outliers.up$tpm.celltype1)
-   
-   lab_text <- c(outliers.down$gene_name, outliers.up$gene_name)
-   lab_textadj <- c(rep(1, nrow(outliers.down)), rep(0, nrow(outliers.up)))
-   lab_textx <- c(rep(2.5, nrow(outliers.down)), rep(6500, nrow(outliers.up)))
-   laborder <- order(lab_y)
-   
-   texty_logo <- ( 0.15 * log(max(exprRange), base = 10))
-   texty_loginc <- ((0.75 * log(max(exprRange), base = 10)) / length(lab_y))
-
-   for (j in 1:length(laborder)) {
-      k <- laborder[j]
-      lab_texty <- (10**( (j - 1) * texty_loginc + texty_logo))
-      text(lab_textx[k], lab_texty, lab_text[k], cex = 0.5, adj = lab_textadj[k])
-      segments(lab_textx[k], lab_texty, lab_x[k], lab_y[k], lwd = 1, col = "grey")
-   }
-
-
-         dev.off()
-      }
-   
    }
 
    if ("deg" %in% names(dat)) {
@@ -575,6 +466,7 @@ setSpecs <- function(baseDir){
 
 
    print("Loading RNA-seq sample information")
+   print(paste0("LOOKING IN: ",specs$baseDir,"/metadata/rnaseq_samples.txt"))
    specs$rnaSamples <- read.table(paste0(specs$baseDir,
       "/metadata/rnaseq_samples.txt"), header=TRUE, sep="\t", as.is=TRUE)
    print(" DONE!")
@@ -600,7 +492,6 @@ setSpecs <- function(baseDir){
 
    specs$degSamples <- list()
    for (i in 1:nrow(specs$rnaComps)) {
-      curComp <- specs$rnaComps[i]
 
       cell1 <- specs$rnaComps[i,"group1name"]
       cell2 <- specs$rnaComps[i,"group2name"]
@@ -664,7 +555,7 @@ makeCorrHeatmap <- function(dat,
       if (!missing(sampleAnnotate)) {
          for (curProp in sampleAnnotate) {
             print(paste0("NOW ON ",curProp))
-            colAnn[,sampleAnnotate] <- dat$specs$rnaSamples[
+            colAnn[,curProp] <- dat$specs$rnaSamples[
                match(rownames(colAnn),
                      dat$specs$rnaSamples$sampleName),
                curProp]
@@ -672,12 +563,14 @@ makeCorrHeatmap <- function(dat,
       }
       colAnn$sampleNames <- NULL
    }
+   print("TEST: SampleAnnotates")
+   print(colAnn)
 
    pheatmap.options <- list(corMat, fontsize_row = 4, fontsize_col = 4,
             main = "Pearson correlation of log2(TPM + 1)",
             border_color = NA,
-            show_rownames = FALSE,
-            show_colnames = FALSE,
+            show_rownames = TRUE,
+            show_colnames = TRUE,
             color = colorRampPalette(c("white", "#008500"))(50)
             )
 
@@ -686,8 +579,9 @@ makeCorrHeatmap <- function(dat,
       pheatmap.options$annotation_row <- colAnn
       pheatmap.options$annotation_legend <- TRUE
       pheatmap.options$annotation_names_col <- TRUE
+#      pheatmap.options$show_rownames <- FALSE,
+#      pheatmap.options$show_colnames <- FALSE
    }
-#   return(list(corMat=corMat, colAnn = colAnn))
 
    pdf(paste0(dat$specs$outDir, "/",
            figName, "_correlation_heatmap.pdf"),
@@ -748,7 +642,7 @@ makeVarGeneHeatmap <- function(dat,
       if (!missing(sampleAnnotate)) {
          for (curProp in sampleAnnotate) {
             print(paste0("NOW ON ",curProp))
-            colAnn[,sampleAnnotate] <- dat$specs$rnaSamples[
+            colAnn[,curProp] <- dat$specs$rnaSamples[
                match(rownames(colAnn),
                      dat$specs$rnaSamples$sampleName),
                curProp]
@@ -763,7 +657,7 @@ makeVarGeneHeatmap <- function(dat,
             cluster_cols = TRUE,
             border_color = NA,
             show_rownames = FALSE,
-            show_colnames = FALSE,
+            show_colnames = TRUE,
             breaks = curBreaks,
             color = plotColors
             )
@@ -772,7 +666,8 @@ makeVarGeneHeatmap <- function(dat,
 #      print(colAnn)
       pheatmap.options$annotation_col <- colAnn
 #      pheatmap.options$annotation_row <- colAnn
-      pheatmap.options$annotation_legend <- TRUE
+#      pheatmap.options$annotation_legend <- TRUE
+      pheatmap.options$annotation_legend <- FALSE
       pheatmap.options$annotation_names_col <- TRUE
    }
 
@@ -911,7 +806,7 @@ plotHmap.deg <- function(dat,
 
       for (curProp in sampleAnnotate) {
          print(paste0("NOW ON ",curProp))
-         colAnn[,sampleAnnotate] <- dat$specs$rnaSamples[
+         colAnn[,curProp] <- dat$specs$rnaSamples[
             match(rownames(colAnn),
                   dat$specs$rnaSamples$sampleName),
             curProp]
@@ -1110,4 +1005,286 @@ mapColor <- function(x,
 
    if (!missing(alpha)) {cols <- addAlpha(cols,alpha=alpha)}
    return(cols)
+}
+
+
+plotDEGscatters <- function(dat, scatterPlot=TRUE) {
+
+   for (i in 1:nrow(dat$specs$rnaComps)) {
+
+      cell1 <- dat$specs$rnaComps[i,"group1name"]
+      cell2 <- dat$specs$rnaComps[i,"group2name"]
+      cell12 <- paste0(cell1,"_vs_",cell2)
+      print(paste0("comparing ",cell1," to ",cell2))
+
+      groupSamples <- dat$specs$degSamples[[cell12]]
+      samples1   <- groupSamples[[1]]
+      samples2   <- groupSamples[[2]]
+
+      comparisonFC <- data.frame(
+         gene_name      = dat$edat$geneExpr$gene_name,
+         tpm.celltype2  = apply(dat$edat$geneExpr[, paste0("tpm.", samples2)],
+                                   1, mean),
+         tpm.celltype1  = apply(dat$edat$geneExpr[, paste0("tpm.", samples1)],
+                                   1, mean),
+         stringsAsFactors = FALSE
+      )
+      comparisonFC$log2fc.celltype1_vs_celltype2 <- round(
+         (1 + comparisonFC$tpm.celltype1) / (1 + comparisonFC$tpm.celltype2),
+         digits = 2 )
+   
+      exprRange <- range(1 + comparisonFC$tpm.celltype1,
+                         1 + comparisonFC$tpm.celltype2)
+   
+      if (scatterPlot) {
+      tmppngfn <- tempfile()
+      png(file = tmppngfn, height = 3.1, width = 3.1, units = "in", res = 300,
+          family = "ArialMT")
+      par(mar = c(0, 0,0, 0))
+      plot(1 + comparisonFC$tpm.celltype2,
+           1 + comparisonFC$tpm.celltype1,
+           ann=FALSE,axes=FALSE,
+           pch=20, cex=0.5, log="xy", col="grey",las=1,
+           xlab = paste0(cell2," (TPM + 1)"),
+           ylab = paste0(cell1," (TPM + 1)"),
+           xlim=exprRange,
+           ylim=exprRange,
+           main="")
+      dev.off()
+      pngbg <- readPNG(tmppngfn)
+      pngbg <- as.raster(pngbg)
+      
+      outFn <- paste0(dat$specs$outDir,"/DEGscatter.",cell12,".pdf")
+      pdf(outFn, height=3.5,width=3.5)
+   
+      par(mar = c(3.75, 3.75, 0.5, 0.5),
+          mgp = c(2, 0.6, 0),
+          cex = 1, cex.axis = 0.8, cex.lab = 1)
+   
+      plot(1 + comparisonFC$tpm.celltype2,
+           1 + comparisonFC$tpm.celltype1,
+           pch=20,
+           cex=0.5,
+           log="xy",
+           type="n",
+           las=1,
+           xlab = paste0(cell2," (TPM + 1)"),
+           ylab = paste0(cell1," (TPM + 1)"),
+           xlim=exprRange,
+           ylim=exprRange,
+           main="")
+      lim<-par()
+      rasterImage(pngbg, 10^lim$usr[1], 10^lim$usr[3],
+                         10^lim$usr[2], 10^lim$usr[4])
+   
+      degGenes.up <- comparisonFC[comparisonFC$gene_name %in%
+                                  dat$deg[[cell12]]$upGenes.minExpr,]
+   
+      degGenes.down  <- comparisonFC[comparisonFC$gene_name %in%
+                                     dat$deg[[cell12]]$downGenes.minExpr,]
+                              
+      points(1 + degGenes.up$tpm.celltype2,
+             1 + degGenes.up$tpm.celltype1,
+             pch=20,
+             cex=0.5,
+             col= "#998ec3")
+   
+      points(1 + degGenes.down$tpm.celltype2,
+             1 + degGenes.down$tpm.celltype1,
+             pch=20,
+             cex=0.5,
+             col="#f1a340")
+   
+   
+      outliers.down <- head(degGenes.up[order(degGenes.up$log2fc.celltype1_vs_celltype2,decreasing=TRUE),], n = 10)
+      outliers.up <- head(degGenes.down[order(degGenes.down$log2fc.celltype1_vs_celltype2),], n = 10)
+   
+      lab_x <- c(1 + outliers.down$tpm.celltype2, 1 + outliers.up$tpm.celltype2)
+      lab_y <- c(1 + outliers.down$tpm.celltype1, 1 + outliers.up$tpm.celltype1)
+      
+      lab_text <- c(outliers.down$gene_name, outliers.up$gene_name)
+      lab_textadj <- c(rep(1, nrow(outliers.down)), rep(0, nrow(outliers.up)))
+      lab_textx <- c(rep(2.5, nrow(outliers.down)), rep(6500, nrow(outliers.up)))
+      laborder <- order(lab_y)
+      
+      texty_logo <- ( 0.15 * log(max(exprRange), base = 10))
+      texty_loginc <- ((0.75 * log(max(exprRange), base = 10)) / length(lab_y))
+   
+      for (j in 1:length(laborder)) {
+         k <- laborder[j]
+         lab_texty <- (10**( (j - 1) * texty_loginc + texty_logo))
+         text(lab_textx[k], lab_texty, lab_text[k], cex = 0.5, adj = lab_textadj[k])
+         segments(lab_textx[k], lab_texty, lab_x[k], lab_y[k], lwd = 1, col = "grey")
+      }
+      legend("topleft",
+             paste0("n=",nrow(degGenes.up)," genes"),
+             text.col="#998ec3",
+             cex=0.75, bty="n")
+      legend("bottomright",
+             paste0("n=",nrow(degGenes.down)),
+             text.col="#f1a340",
+             cex=0.75, bty="n")
+   
+   
+      dev.off()
+      }
+   
+   }
+
+}
+
+
+plotDEGvolcanos <- function(dat) {
+
+   for (i in 1:nrow(dat$specs$rnaComps)) {
+
+      cell1 <- dat$specs$rnaComps[i,"group1name"]
+      cell2 <- dat$specs$rnaComps[i,"group2name"]
+      cell12 <- paste0(cell1,"_vs_",cell2)
+      print(paste0("comparing ",cell1," to ",cell2))
+
+      groupSamples <- dat$specs$degSamples[[cell12]]
+      samples1   <- groupSamples[[1]]
+      samples2   <- groupSamples[[2]]
+
+      comparisonFC <- data.frame(
+         transcript_id  = dat$edat$txExpr$transcript_id,
+         gene_name      = dat$edat$txExpr$gene_name,
+         tpm.celltype2  = apply(dat$edat$txExpr[, paste0("tpm.", samples2)],
+                                   1, mean),
+         tpm.celltype1  = apply(dat$edat$txExpr[, paste0("tpm.", samples1)],
+                                   1, mean),
+         stringsAsFactors = FALSE
+      )
+
+#      comparisonFC$fc.celltype1_vs_celltype2 <- round(
+#         (1 + comparisonFC$tpm.celltype1) / (1 + comparisonFC$tpm.celltype2),
+#         digits = 2 )
+
+      comparisonFC$fc.celltype1_vs_celltype2 <- 
+         (1 + comparisonFC$tpm.celltype1) / (1 + comparisonFC$tpm.celltype2)
+
+#      return(list(comparisonFC=comparisonFC, sr=dat$deg[[cell12]]$sleuthResults))
+      print("getting qvalue")
+      comparisonFC$qval <- dat$deg[[cell12]]$sleuthResults[
+                              match(comparisonFC$transcript_id,
+                                    dat$deg[[cell12]]$sleuthResults$target_id),
+                              "qval"]
+      comparisonFC$qval.orig <- comparisonFC$qval
+      comparisonFC$qval <- -1 * log10(comparisonFC$qval)
+      print("->done")
+      comparisonFC <- na.omit(comparisonFC)
+
+      print(paste0("Restricting to genes at least ",dat$specs$thresh$exprGenes.minTPM," TPM"))
+      comparisonFC  <- comparisonFC[comparisonFC$tpm.celltype1 >= 
+                                    dat$specs$thresh$exprGenes.minTPM |
+                                    comparisonFC$tpm.celltype2 >= 
+                                    dat$specs$thresh$exprGenes.minTPM,]
+
+      fcRange <- range(comparisonFC$fc.celltype1_vs_celltype2)
+      qvalRange <- range(comparisonFC$qval)
+      print("GOT HERE 1")
+   
+      tmppngfn <- tempfile()
+      png(file = tmppngfn, height = 3.1, width = 3.1, units = "in", res = 300,
+          family = "ArialMT")
+      par(mar = c(0, 0,0, 0))
+      plot(comparisonFC$fc.celltype1_vs_celltype2,
+           comparisonFC$qval,
+           ann=FALSE,axes=FALSE,
+           pch=20, cex=0.5, log="x", col="grey",las=1,
+           xlab = "",
+           ylab = "-log10 q-value",
+           xlim=fcRange,
+           ylim=qvalRange,
+           main="")
+      dev.off()
+      pngbg <- readPNG(tmppngfn)
+      pngbg <- as.raster(pngbg)
+      print("GOT HERE 2")
+      
+      outFn <- paste0(dat$specs$outDir,"/DEGvolcano.",cell12,".pdf")
+      pdf(outFn, height=3.5,width=3.5)
+   
+      par(mar = c(3.75, 3.75, 0.5, 0.5),
+          mgp = c(2, 0.6, 0),
+          cex = 1, cex.axis = 0.8, cex.lab = 1)
+   
+      plot(comparisonFC$fc.celltype1_vs_celltype2,
+           comparisonFC$qval,
+           pch=20,
+           cex=0.5,
+           log="x",
+           type="n",
+           las=1,
+#           xlab = paste0(cell12," (FC)"),
+           xlab = "fold change",
+           ylab = "-log10 q-value",
+           xlim=fcRange,
+           ylim=qvalRange,
+           main="")
+      lim<-par()
+      rasterImage(pngbg, 10^lim$usr[1], lim$usr[3],
+                         10^lim$usr[2], lim$usr[4])
+      print("GOT HERE 3")
+   
+      if (1) {
+      degGenes.up <- comparisonFC[comparisonFC$qval.orig <= dat$specs$thresh$sleuth.qval &
+                                  comparisonFC$tpm.celltype1 > comparisonFC$tpm.celltype2,]
+      degGenes.down <- comparisonFC[comparisonFC$qval.orig <= dat$specs$thresh$sleuth.qval &
+                                    comparisonFC$tpm.celltype2 > comparisonFC$tpm.celltype1,]
+                              
+      points(degGenes.up$fc.celltype1_vs_celltype2,
+             degGenes.up$qval,
+             pch=20,
+             cex=0.5,
+             col= "#998ec3")
+   
+      points(degGenes.down$fc.celltype1_vs_celltype2,
+             degGenes.down$qval,
+             pch=20,
+             cex=0.5,
+             col="#f1a340")
+   
+   
+      outliers.down <- head(degGenes.up[order(degGenes.up$qval,decreasing=TRUE),], n = 10)
+      outliers.up <- head(degGenes.down[order(degGenes.down$qval,decreasing=TRUE),], n = 10)
+   
+      lab_x <- c(outliers.down$fc.celltype1_vs_celltype2,
+                 outliers.up$fc.celltype1_vs_celltype2)
+      lab_y <- c(outliers.down$qval, outliers.up$qval)
+      
+      lab_text <- c(outliers.down$gene_name, outliers.up$gene_name)
+      lab_textadj <- c(rep(0, nrow(outliers.down)), rep(1, nrow(outliers.up)))
+      lab_textx <- c(rep(25, nrow(outliers.down)), rep(0.04, nrow(outliers.up)))
+      laborder <- order(lab_y)
+      
+      texty_logo <- ( 0.15 * max(qvalRange))
+      texty_loginc <- ((0.8 * max(qvalRange)) / length(lab_y))
+   
+      for (j in 1:length(laborder)) {
+         k <- laborder[j]
+         lab_texty <- ( (j - 1) * texty_loginc + texty_logo)
+         text(lab_textx[k], lab_texty, lab_text[k], cex = 0.5, adj = lab_textadj[k])
+         segments(lab_textx[k], lab_texty, lab_x[k], lab_y[k], lwd = 1, col = "grey")
+      }
+
+      legend("topright",
+             paste0("n=",nrow(degGenes.up)," transcripts"),
+             text.col="#998ec3",
+             cex=0.75,bty="n")
+
+      legend("topleft",
+             paste0("n=",nrow(degGenes.down)),
+             text.col="#f1a340",
+             cex=0.75,bty="n")
+      }
+
+      mtext(1,line=2,at=fcRange[1],adj=0,text=cell2,col="#f1a340")
+      mtext(1,line=2,at=fcRange[2],adj=1,text=cell1,col="#998ec3")
+   
+      dev.off()
+   
+   }
+
 }

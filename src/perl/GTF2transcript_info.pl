@@ -21,6 +21,10 @@ sub main {
       my ($tx_name) = ($line =~ /transcript_name \"([^"]+)\"/) ;
 
       my ($gene_biotype) = ($line =~ /gene_biotype \"([^"]+)\"/) ;
+      my ($tx_version) = ($line =~ /transcript_version \"([^"]+)\"/) ;
+      if (defined $tx_version) {
+         $tx_id .= ".$tx_version";
+      } #fpd20181204_1523
 
       if (!defined $gene_name) {$gene_name = $gene_id ;}
       if (!defined $tx_name) {$tx_name = $tx_id ;}

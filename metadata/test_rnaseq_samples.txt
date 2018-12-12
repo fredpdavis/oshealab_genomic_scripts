@@ -1,0 +1,5 @@
+sampleID	sampleName	runID	fastqName	cytokineStim
+r001	unstim_rep1	test	in1.fq.gz	nc
+r002	unstim_rep2	test	in2.fq.gz	nc
+r003	IFNg_72h_rep1	test	in3.fq.gz	IFNg_72h
+r004	IFNg_72h_rep2	test	in4.fq.gz	IFNg_72h

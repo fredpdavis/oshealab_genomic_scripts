@@ -1,20 +1,20 @@
-# oshealab_genomic_scripts -- scripted and reproducible genomic data analysis
+# yarp -- Yet Another RNA-seq analysis Pipeline
 
-Any questions, contact fred.davis@nih.gov
+Author: [Fred P. Davis](http://fredpdavis.com)
 
 ## Overview
 
-The goal of this package is to help you analyze your genomic data in 
-(1) well-documented, (2) easy to reproduce, and (3) standard way 
+The goal of this package is to help you analyze your RNA-seq data in 
+(1) well-documented, (2) easy to reproduce, and (3) standardized way.
 
 ## 1. What do I need to get started?
 
-This package is written for the HPC computing environment at NIH.
-You need accounts on the biowulf cluster, and sufficient disk space to
-deal with sequence data and the resulting analyses. Disk space varies by how
-deeply your samples were sequenced, but ~5GB/sample is a reasonable estimate.
+This package is written for the [HPC computing environment at NIH](http://hpc.nih.gov).
+You need to [request an account on the biowulf cluster](https://hpc.nih.gov/docs/accounts.html),
+and sufficient disk space to store the raw sequence data and resulting analyses.
+Disk space varies by how deeply your samples were sequenced, but ~5GB/sample is a
+reasonable estimate.
 
-Request your account [here](https://hpc.nih.gov/docs/accounts.html)
 
 ## 2. General advice for computational work
 
@@ -33,7 +33,7 @@ responsibility, or to substitute for your thinking.
 
 Meticulous notes are just as critical for computational work as they are for
 experimental work. I keep records in three ways:
-    
+
 1. Scripts. These are text files containing the actual commands that perform
 each analysis step. Scripts force you to keep track of your analyses.
  
@@ -42,9 +42,9 @@ what happened in a specific directory, I write it in a README text file
 that I keep in that specific directory.
  
 3. Electronic lab notebook. I keep a chronological lab notebook made of
-text file per day (see [mdlabbook](http://github.com/fredpdavis/mdlabbook).
+text file per day (see [mdlabbook](http://github.com/fredpdavis/mdlabbook)).
 You should use whatever system you are comfortable with, but I highly
-recommend you keep eletronic notes. When you want to remember what commands
+recommend you keep electronic notes. When you want to remember what commands
 you tried, or what analysis you were working on Monday two weeks ago, you
 are unlikely to remember accurately unless you can look back at notes.
 
@@ -52,7 +52,7 @@ are unlikely to remember accurately unless you can look back at notes.
 
 This is of course an exaggeration -- ultimately you are trusting multiple
 layers of software that operate the sequencer through to the programs
-that generate the figures you will intrepret. Be skeptical of all results.
+that generate the figures you will interpret. Be skeptical of all results.
 Don't over-interpret or assume your results are correct: lots of things can
 and do go wrong. Do you have positive and negative controls? If something
 looks weird, it probably is.
@@ -68,7 +68,7 @@ run.
 #### i. keep an organized directory structure.
 
 I make a new folder for each project I work on, with the following structure:
-    
+
 - README -- file where I describe the project and broad goals
 - data/ - directory storing raw data, each in its own folder -- eg, data/fastq/
 - src/ - directory storing all scripts / code used in the project. I usually organize by language -- eg, src/R/
@@ -107,7 +107,9 @@ We will not cover the many other kinds of analyses you can perform on RNA-seq
 measurements, including identifying alternative splicing events, estimating
 nascent transcription, or evaluating more complex experimental designs.
 
-This package uses the following external data sources. __You don't need to download these__, as this package either comes with or will retrieve the appropriate files.
+This package uses the following external data sources. __You don't need to
+download these__, as this package either comes with or will retrieve the
+appropriate files.
 
 | data set                                                                                      | purpose                                       |
 |-----------------------------------------------------------------------------------------------|-----------------------------------------------|
@@ -117,7 +119,7 @@ This package uses the following external data sources. __You don't need to downl
 
 This package uses the following underlying tools to analyze RNA-seq data.
 __You don't need to download these__, as they are already installed on the NIH
-HPC and accessible through their very well maintained system of ['modules'](https://hpc.nih.gov/apps/modules.html)
+HPC through their fantastic system of ['modules'](https://hpc.nih.gov/apps/modules.html)
 
 | software                                                      | purpose                                                   |
 |---------------------------------------------------------------|-----------------------------------------------------------|
@@ -162,7 +164,8 @@ cd /data/davisfp/projects
 git clone https://github.com/fredpdavis/oshealab_genomic_scripts.git
 ```
 
-- rename to your project name, cytokineX in this example. __NOTE: REPLACE cytokineX with your project name__
+- rename to your project name, cytokineX in this example. __NOTE: REPLACE
+cytokineX with your project name__
 
 ```
 mv oshealab_genomic_scripts cytokineX
@@ -187,7 +190,7 @@ using it to analyze your own data.
 
 #### 3.2.1 Get FASTQ sequence files
 
-For testing, I provide four small fastq files-- you can delete if you want.
+For testing, I provide four small fastq files -- you can delete these if you want.
 
 ```
 shell> ls data/fastq/test
@@ -202,7 +205,7 @@ Sequence files often have a .fastq or .fq suffix, and are typically
 compressed by either gzip or bunzip, resulting in a further '.gz' or
 '.bz2' suffix, respectively.
 
-You can request your own sequence files from NIAMS core if your samples were
+You can request your own sequence files from the NIAMS core if your samples were
 sequenced locally, or download them from
 [NCBI GEO](https://www.ncbi.nlm.nih.gov/geo/) if you want to re-process
 published data.
@@ -212,7 +215,7 @@ named by sequencing run identifiers (if sequenced locally), or by author if
 the FASTQ comes from a published paper.
 
 
-#### 3.2.2 Edit the sample sheet `metadata/rnaseq_samples.txt`
+#### 3.2.2 Create the sample sheet `metadata/rnaseq_samples.txt`
 
 - This file describes all of your RNA-seq samples.
 
@@ -223,7 +226,7 @@ the FASTQ comes from a published paper.
 - This package includes an example file listing the test samples
 
 ```
-shell> cat metadata/rnaseq_samples.txt
+shell> cat metadata/test_rnaseq_samples.txt
 
 sampleID	sampleName	runID	fastqName	cytokineStim
 r001	unstim_rep1	test	in1.fq.gz	nc
@@ -232,8 +235,12 @@ r003	IFNg_72h_rep1	test	in3.fq.gz	IFNg_72h
 r004	IFNg_72_rep2	test	in4.fq.gz	IFNg_72h
 ```
 
-- Edit this file to describe your samples. nano is an easy-to-use text
-editor: `nano metadata/rnaseq_samples.txt`
+- Make a copy of this file and edit it to describe your samples. You can do the latter using nano, an easy to use text editor.
+
+```
+cp metadata/test_rnaseq_samples.txt metadata/rnaseq_samples.txt
+nano metadata/rnaseq_samples.txt
+```
 
 - requires 4 fields:
     1. sampleID
@@ -245,10 +252,11 @@ editor: `nano metadata/rnaseq_samples.txt`
   tissue, etc. this is useful for specifying the condition pairs you
   want to compare in the next file.
 
-- expects to find fastq files in `data/fastq/<runID>/<fastqName>`
+- expects to find fastq files in `data/fastq/<runID>/<fastqName>`.
+For example, the read data for sampleID r001 should be in `data/fastq/test/in1.fq.gz`.
 
 
-#### 3.2.3 Edit the comparisons file `metadata/rnaseq_comparisons.txt`
+#### 3.2.3 Create the comparisons file `metadata/rnaseq_comparisons.txt`
 
 - This file lists groups of samples that you'd like to compare
 
@@ -266,8 +274,12 @@ group1name      group1criteria  group2name      group2criteria
 no.cytokine     cytokineStim=nc gamma   cytokineStim=IFNg_72h
 ```
 
-- Edit this file to describe the comparisons you'd like to make:
-`nano metadata/rnaseq_comparisons.txt`
+- Make a copy of this file and edit it to describe the comparisons you'd like to make:
+
+```
+cp metadata/test_rnaseq_comparisons.txt metadata/rnaseq_comparisons.txt
+nano metadata/rnaseq_samples.txt
+```
 
 - If you want to specify your samples using more than one feature, use
 commas to express logical AND, and semicolon to express logical OR.
@@ -340,10 +352,10 @@ set BASEDIR="/data/davisfp/projects/cytokineX"
 - Edit the script to specify which tasks to process. By default, all samples
 listed in the metadata file will be processed. If you just want to process
 a subset of those samples, you can specify their defining features in the
-script
+script. For example, to process only samples not stimulated by cytokine:
 
 ```
-set SAMPLE_OPTION="-cytokine no -cellType CD4"
+set SAMPLE_OPTION="-cytokineStim no"
 ```
 
 - Edit the script to tell the cluster how many jobs you will run. For example,
@@ -491,7 +503,7 @@ makeVarGeneHeatmap(dat,sampleAnnotate=c("cytokineStim"))
 - To view the figures, secury copy (scp) the whole directory to your local machine's Desktop. Open a new terminal window on your local machine and type:
 
 ```
-scp -r data/projects/cytokineX/analysis/basicFigures ~/Desktop
+scp -r biowulf:data/projects/cytokineX/analysis/basicFigures ~/Desktop
 ```
 
 ## Design decisions
