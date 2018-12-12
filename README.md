@@ -1,4 +1,4 @@
-# yarp -- Yet Another RNA-seq analysis Pipeline
+# YARP -- Yet Another RNA-seq analysis Pipeline
 
 Author: [Fred P. Davis](http://fredpdavis.com)
 
@@ -9,7 +9,7 @@ The goal of this package is to help you analyze your RNA-seq data in
 
 ## 1. What do I need to get started?
 
-This package is written for the [HPC computing environment at NIH](http://hpc.nih.gov).
+YARP is written for the [HPC computing environment at NIH](http://hpc.nih.gov).
 You need to [request an account on the biowulf cluster](https://hpc.nih.gov/docs/accounts.html),
 and sufficient disk space to store the raw sequence data and resulting analyses.
 Disk space varies by how deeply your samples were sequenced, but ~5GB/sample is a
@@ -26,7 +26,7 @@ fully understand the experiment and how its measurements are interpreted.
 If you can't convincingly explain what's going on in the experiment or
 the analysis, keep reading or asking others until you can.
  
-This package is meant to help you get started -- not to offload your
+YARP is meant to help you get started -- not to offload your
 responsibility, or to substitute for your thinking.
 
 ### 2.2. Write everything down.
@@ -76,7 +76,7 @@ I make a new folder for each project I work on, with the following structure:
 - results/ - store results from off-the-shelf programs -- eg, results/kallisto/
 - analysis/ - where I do 'secondary' analysis, like making figures
 
-This package comes with, or builds up, the directory structure above.
+YARP comes with, or builds up, the directory structure above.
 
 #### ii. don't use weird characters
 
@@ -107,7 +107,7 @@ We will not cover the many other kinds of analyses you can perform on RNA-seq
 measurements, including identifying alternative splicing events, estimating
 nascent transcription, or evaluating more complex experimental designs.
 
-This package uses the following external data sources. __You don't need to
+YARP uses the following external data sources. __You don't need to
 download these__, as this package either comes with or will retrieve the
 appropriate files.
 
@@ -117,7 +117,7 @@ appropriate files.
 | [Life Tech: ERCC92](https://assets.thermofisher.com/TFS-Assets/LSG/manuals/ERCC92.zip)        | synthetic spike-in sequences, concentratsion  |
 
 
-This package uses the following underlying tools to analyze RNA-seq data.
+YARP uses the following underlying tools to analyze RNA-seq data.
 __You don't need to download these__, as they are already installed on the NIH
 HPC through their fantastic system of ['modules'](https://hpc.nih.gov/apps/modules.html)
 
