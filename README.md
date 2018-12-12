@@ -268,7 +268,7 @@ For example, the read data for sampleID r001 should be in `data/fastq/test/in1.f
 the sample sheet
 
 ```
-shell> cat metadata/rnaseq_comparisons.txt
+shell> cat metadata/test_rnaseq_comparisons.txt
 
 group1name      group1criteria  group2name      group2criteria
 no.cytokine     cytokineStim=nc gamma   cytokineStim=IFNg_72h
