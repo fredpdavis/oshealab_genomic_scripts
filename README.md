@@ -2,6 +2,10 @@
 
 Author: [Fred P. Davis](http://fredpdavis.com)
 
+## Contributors
+
+- Alejandro Villarino contributed R code to perform functional analysis using clusterProfiler
+
 ## Overview
 
 The goal of this package is to help you analyze your RNA-seq data in 

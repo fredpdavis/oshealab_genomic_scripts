@@ -1,0 +1,5 @@
+# TODO
+
+1. change how gene-level differential calls are made. use the pval_aggregate=TRUE option to sleuth_results() to get real gene-level p-values
+
+2. in the DEG object, store condition-averaged FC for all genes, including those not diffexpr
