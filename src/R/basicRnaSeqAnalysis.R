@@ -1087,30 +1087,38 @@ mapColor <- function(x,
    return(cols)
 }
 
-generic.plotDEGscatters <- function(exprMat, #data frame
+generic.plotDEGscatters <- function(exprMat, # data frame with expression levels
                                     outFn = "scatter.pdf",
-                                    upGenes, #points to color above diagonal
-                                    downGenes, #points to color below diagonal
-                                    labeledUpGenes, #above diagonal
-                                    labeledDownGenes, #below diagonal
-                                    upGenes.color = "darkOrange2",
-                                    downGenes.color = "steelBlue2",
-                                    colname.tpm1, # if not specified, assumes first column
-                                    colname.tpm2, # if not specified, assumes second column
+                                    upGenes = c(),   # points to color above diagonal
+                                    downGenes = c(), # points to color below diagonal
+                                    labeledUpGenes = c(), # genes to label above diagonal
+                                    labeledDownGenes = c(), # genes to label below diagonal
+                                    color.upGenes = "darkOrange2",
+                                    color.downGenes = "steelBlue2",
+                                    colname.tpm1, #if not specified, assumes column 1
+                                    colname.tpm2, #if not specified, assumes column 2
                                     colname.gene, #if not specified, assumes row name=gene name
-                                    label.tpm1 = "tpm1",
-                                    label.tpm2 = "tpm2",
-                                    axisLimit, #optional max TPM for plot
-                                    scatterPlot=TRUE) {
+                                    label.tpm1 = "tpm1", #condition 1 name
+                                    label.tpm2 = "tpm2", #condition 2 name
+                                    exprUnits = "TPM",
+                                    axisMax #optional max TPM for plot
+                                   ) {
 # GOAL: Generic drop-in routine for others non-YARP code
 
-   exprMat$log2fc.1_vs_2 <- (1 + exprMat[[colname.tpm1]]) /
-                            (1 + exprMat[[colname.tpm2]])
+
+   if (missing(colname.gene)) {
+      exprMat$added.gene.name <- rownames(exprMat)
+      colname.gene <- "added.gene.name"
+   }
+
+   if (missing(colname.tpm1)) { colname.tpm1 <- 1 }
+   if (missing(colname.tpm2)) { colname.tpm2 <- 2 }
 
    if (missing(axisMax)) {
       axisMax <- 1 + max(exprMat[[colname.tpm1]],
                          exprMat[[colname.tpm2]])
    }
+   exprRange <- c(1,axisMax)
 
    tmppngfn <- tempfile()
    png(file = tmppngfn, height = 3.1, width = 3.1, units = "in", res = 300,
@@ -1120,10 +1128,10 @@ generic.plotDEGscatters <- function(exprMat, #data frame
         1 + exprMat[[colname.tpm1]],
         ann=FALSE,axes=FALSE,
         pch=20, cex=0.5, log="xy", col="grey",las=1,
-        xlab = paste0(cell2," (TPM + 1)"),
-        ylab = paste0(cell1," (TPM + 1)"),
-        xlim=c(1,axisMax),
-        ylim=c(1,axisMax),
+        xlab = paste0(label.tpm2," (",exprUnits," + 1)"),
+        ylab = paste0(label.tpm1," (",exprUnits," + 1)"),
+        xlim=exprRange,
+        ylim=exprRange,
         main="")
    dev.off()
    pngbg <- readPNG(tmppngfn)
@@ -1131,7 +1139,7 @@ generic.plotDEGscatters <- function(exprMat, #data frame
    
    pdf(outFn, height=3.5,width=3.5)
 
-   par(mar = c(3.75, 3.75, 0.5, 0.5),
+   par(mar = c(3.75, 3.75, 1, 1),
        mgp = c(2, 0.6, 0),
        cex = 1, cex.axis = 0.8, cex.lab = 1)
 
@@ -1142,8 +1150,8 @@ generic.plotDEGscatters <- function(exprMat, #data frame
         log="xy",
         type="n",
         las=1,
-        xlab = label.tpm2,
-        ylab = label.tpm1,
+        xlab = paste0(label.tpm2," (",exprUnits," + 1)"),
+        ylab = paste0(label.tpm1," (",exprUnits," + 1)"),
         xlim=exprRange,
         ylim=exprRange,
         main="")
@@ -1151,33 +1159,45 @@ generic.plotDEGscatters <- function(exprMat, #data frame
    rasterImage(pngbg, 10^lim$usr[1], 10^lim$usr[3],
                       10^lim$usr[2], 10^lim$usr[4])
 
+# Color upGenes and downGenes points
    degGenes.up <- exprMat[exprMat[[colname.gene]] %in% upGenes,]
    degGenes.down <- exprMat[exprMat[[colname.gene]] %in% downGenes,]
 
-   points(1 + degGenes.up[[colname.tpm2]],
-          1 + degGenes.up[[colname.tpm1]],
-          pch=20,
-          cex=0.5,
-          col= "#998ec3")
+   if (nrow(degGenes.up) > 0) {
+      points(1 + degGenes.up[[colname.tpm2]],
+             1 + degGenes.up[[colname.tpm1]],
+             pch=20,
+             cex=0.5,
+             col= color.upGenes)
+   }
 
-   points(1 + degGenes.down[[colname.tpm2]],
-          1 + degGenes.down[[colname.tpm1]],
-          pch=20,
-          cex=0.5,
-          col="#f1a340")
+   if (nrow(degGenes.down) > 0) {
+      points(1 + degGenes.down[[colname.tpm2]],
+             1 + degGenes.down[[colname.tpm1]],
+             pch=20,
+             cex=0.5,
+             col= color.downGenes)
+   }
 
-   outliers.down <- degGenes.up[degGenes.up[[colname.gene]] %in% labeledUpGenes,]
-   outliers.up <- degGenes.down[degGenes.down[[colname.gene]] %in% labeledDownGenes,]
+# Label labeledUpGenes and labeledDownGenes points
+   outliers.down <- exprMat[exprMat[[colname.gene]] %in% labeledUpGenes,]
+   outliers.up <- exprMat[exprMat[[colname.gene]] %in% labeledDownGenes,]
+
+   if (nrow(outliers.down) + nrow(outliers.up) > 0) {
 
    lab_x <- c(1 + outliers.down[[colname.tpm2]],
               1 + outliers.up[[colname.tpm2]])
 
    lab_y <- c(1 + outliers.down[[colname.tpm1]],
               1 + outliers.up[[colname.tpm1]])
+
+   rightLabelX <- exp(0.7 * log(axisMax))
    
    lab_text <- c(outliers.down[[colname.gene]], outliers.up[[colname.gene]])
-   lab_textadj <- c(rep(1, nrow(outliers.down)), rep(0, nrow(outliers.up)))
-   lab_textx <- c(rep(2.5, nrow(outliers.down)), rep(6500, nrow(outliers.up)))
+   lab_textadj <- c(rep(1, nrow(outliers.down)),
+                    rep(0, nrow(outliers.up)))
+   lab_textx <- c(rep(2.5, nrow(outliers.down)),
+                  rep(rightLabelX, nrow(outliers.up)))
    laborder <- order(lab_y)
    
    texty_logo <- ( 0.15 * log(axisMax, base = 10))
@@ -1189,13 +1209,19 @@ generic.plotDEGscatters <- function(exprMat, #data frame
       text(lab_textx[k], lab_texty, lab_text[k], cex = 0.5, adj = lab_textadj[k])
       segments(lab_textx[k], lab_texty, lab_x[k], lab_y[k], lwd = 1, col = "grey")
    }
+   }
+
+
+
+# Add legends for number of upGenes and downGenes
+
    legend("topleft",
           paste0("n=",nrow(degGenes.up)," genes"),
-          text.col="#998ec3",
+          text.col=color.upGenes,
           cex=0.75, bty="n")
    legend("bottomright",
           paste0("n=",nrow(degGenes.down)),
-          text.col="#f1a340",
+          text.col=color.downGenes,
           cex=0.75, bty="n")
 
 
