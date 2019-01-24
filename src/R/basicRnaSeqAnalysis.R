@@ -331,6 +331,8 @@ defineDEG <- function(dat,
                                 1, mean),
          stringsAsFactors = FALSE
       )
+      comparisonFC$log2fc <- log2(1 + comparisonFC$tpm.celltype2) -
+                             log2(1 + comparisonFC$tpm.celltype1)
 
 
       upGenes <- comparisonFC[
@@ -368,7 +370,8 @@ defineDEG <- function(dat,
          genes.deg[[cell12]]$degGenes           <- sleuthData$degGenes
          genes.deg[[cell12]]$upGenes            <- sleuthData$upGenes
          genes.deg[[cell12]]$downGenes          <- sleuthData$downGenes
-         genes.deg[[cell12]]$sleuthResults      <- sleuthData$sleuthResults
+         genes.deg[[cell12]]$sleuthResults.gene <- sleuthData$sleuthResults.gene
+         genes.deg[[cell12]]$sleuthResults.tx   <- sleuthData$sleuthResults.tx
          genes.deg[[cell12]]$designMat          <- sleuthData$designMat
          if (!is.na(sleuthData$so)) genes.deg[[cell12]]$so <- sleuthData$so
    
@@ -442,9 +445,24 @@ defineDEG <- function(dat,
             comparisonName      = comparisonString )
      }
    
-      genes.deg[[cell12]]$fc <- comparisonFC[ comparisonFC$gene_name %in%
+      genes.deg[[cell12]]$fc.deg <- comparisonFC[ comparisonFC$gene_name %in%
          unique(c(genes.deg[[cell12]]$upGenes,
                   genes.deg[[cell12]]$downGenes)),]
+
+
+      genes.deg[[cell12]]$fc.all <- comparisonFC
+
+      genes.deg[[cell12]]$fc.all <- merge(
+         genes.deg[[cell12]]$fc.all,
+         genes.deg[[cell12]]$sleuthResults.gene,
+         by.x="gene_name",
+         by.y="target_id",
+         all.x=TRUE,all.y=FALSE)
+
+      genes.deg[[cell12]]$fc.all$pval[is.na(genes.deg[[cell12]]$fc.all$pval)] <- 1
+      genes.deg[[cell12]]$fc.all$qval[is.na(genes.deg[[cell12]]$fc.all$qval)] <- 1
+      genes.deg[[cell12]]$fc.all$pi <- genes.deg[[cell12]]$fc.all$log2fc *
+                                       -1 * log10(genes.deg[[cell12]]$fc.all$qval)
    
       genes.deg[[cell12]]$upGenes.minExpr <- sort(intersect(
          genes.deg[[cell12]]$upGenes,
@@ -947,7 +965,7 @@ readSleuthOutput <- function(comparisonName, resultsDir){
 
    so <- NA
    soFn <- paste0(resultsDir,"/so.rds")
-   if (file.exists(soFn)) { so<-readRDS(file=soFn) }
+   if (file.exists(soFn)) { so <- readRDS(file=soFn) }
 
    sleuthResults.gene   <- readRDS(file=paste0(resultsDir,
                                                "/sleuthResults.gene.rds"))
@@ -1067,6 +1085,122 @@ mapColor <- function(x,
 
    if (!missing(alpha)) {cols <- addAlpha(cols,alpha=alpha)}
    return(cols)
+}
+
+generic.plotDEGscatters <- function(exprMat, #data frame
+                                    outFn = "scatter.pdf",
+                                    upGenes, #points to color above diagonal
+                                    downGenes, #points to color below diagonal
+                                    labeledUpGenes, #above diagonal
+                                    labeledDownGenes, #below diagonal
+                                    upGenes.color = "darkOrange2",
+                                    downGenes.color = "steelBlue2",
+                                    colname.tpm1, # if not specified, assumes first column
+                                    colname.tpm2, # if not specified, assumes second column
+                                    colname.gene, #if not specified, assumes row name=gene name
+                                    label.tpm1 = "tpm1",
+                                    label.tpm2 = "tpm2",
+                                    axisLimit, #optional max TPM for plot
+                                    scatterPlot=TRUE) {
+# GOAL: Generic drop-in routine for others non-YARP code
+
+   exprMat$log2fc.1_vs_2 <- (1 + exprMat[[colname.tpm1]]) /
+                            (1 + exprMat[[colname.tpm2]])
+
+   if (missing(axisMax)) {
+      axisMax <- 1 + max(exprMat[[colname.tpm1]],
+                         exprMat[[colname.tpm2]])
+   }
+
+   tmppngfn <- tempfile()
+   png(file = tmppngfn, height = 3.1, width = 3.1, units = "in", res = 300,
+       family = "ArialMT")
+   par(mar = c(0, 0,0, 0))
+   plot(1 + exprMat[[colname.tpm2]],
+        1 + exprMat[[colname.tpm1]],
+        ann=FALSE,axes=FALSE,
+        pch=20, cex=0.5, log="xy", col="grey",las=1,
+        xlab = paste0(cell2," (TPM + 1)"),
+        ylab = paste0(cell1," (TPM + 1)"),
+        xlim=c(1,axisMax),
+        ylim=c(1,axisMax),
+        main="")
+   dev.off()
+   pngbg <- readPNG(tmppngfn)
+   pngbg <- as.raster(pngbg)
+   
+   pdf(outFn, height=3.5,width=3.5)
+
+   par(mar = c(3.75, 3.75, 0.5, 0.5),
+       mgp = c(2, 0.6, 0),
+       cex = 1, cex.axis = 0.8, cex.lab = 1)
+
+   plot(1 + exprMat[[colname.tpm2]],
+        1 + exprMat[[colname.tpm1]],
+        pch=20,
+        cex=0.5,
+        log="xy",
+        type="n",
+        las=1,
+        xlab = label.tpm2,
+        ylab = label.tpm1,
+        xlim=exprRange,
+        ylim=exprRange,
+        main="")
+   lim<-par()
+   rasterImage(pngbg, 10^lim$usr[1], 10^lim$usr[3],
+                      10^lim$usr[2], 10^lim$usr[4])
+
+   degGenes.up <- exprMat[exprMat[[colname.gene]] %in% upGenes,]
+   degGenes.down <- exprMat[exprMat[[colname.gene]] %in% downGenes,]
+
+   points(1 + degGenes.up[[colname.tpm2]],
+          1 + degGenes.up[[colname.tpm1]],
+          pch=20,
+          cex=0.5,
+          col= "#998ec3")
+
+   points(1 + degGenes.down[[colname.tpm2]],
+          1 + degGenes.down[[colname.tpm1]],
+          pch=20,
+          cex=0.5,
+          col="#f1a340")
+
+   outliers.down <- degGenes.up[degGenes.up[[colname.gene]] %in% labeledUpGenes,]
+   outliers.up <- degGenes.down[degGenes.down[[colname.gene]] %in% labeledDownGenes,]
+
+   lab_x <- c(1 + outliers.down[[colname.tpm2]],
+              1 + outliers.up[[colname.tpm2]])
+
+   lab_y <- c(1 + outliers.down[[colname.tpm1]],
+              1 + outliers.up[[colname.tpm1]])
+   
+   lab_text <- c(outliers.down[[colname.gene]], outliers.up[[colname.gene]])
+   lab_textadj <- c(rep(1, nrow(outliers.down)), rep(0, nrow(outliers.up)))
+   lab_textx <- c(rep(2.5, nrow(outliers.down)), rep(6500, nrow(outliers.up)))
+   laborder <- order(lab_y)
+   
+   texty_logo <- ( 0.15 * log(axisMax, base = 10))
+   texty_loginc <- ((0.75 * log(axisMax, base = 10)) / length(lab_y))
+
+   for (j in 1:length(laborder)) {
+      k <- laborder[j]
+      lab_texty <- (10**( (j - 1) * texty_loginc + texty_logo))
+      text(lab_textx[k], lab_texty, lab_text[k], cex = 0.5, adj = lab_textadj[k])
+      segments(lab_textx[k], lab_texty, lab_x[k], lab_y[k], lwd = 1, col = "grey")
+   }
+   legend("topleft",
+          paste0("n=",nrow(degGenes.up)," genes"),
+          text.col="#998ec3",
+          cex=0.75, bty="n")
+   legend("bottomright",
+          paste0("n=",nrow(degGenes.down)),
+          text.col="#f1a340",
+          cex=0.75, bty="n")
+
+
+   dev.off()
+   
 }
 
 
@@ -1370,24 +1504,33 @@ runClusterProfiler <- function(dat) {
       cell1 <- dat$specs$rnaComps[i,"group1name"]
       cell2 <- dat$specs$rnaComps[i,"group2name"]
       cell12 <- paste0(cell1,"_vs_",cell2)
+      if (cell12 == "WT.unstim_vs_Stat4KO.unstim") next;
       print(paste0("NOW ON ",cell12,"----------------------"))
 
-      tx <- runClusterProfiler.deg(degGenes=c(dat$deg[[cell12]]$upGenes.minExpr,
-                                              dat$deg[[cell12]]$downGenes.minExpr),
-                                   name=cell12,
-                                   outDir=dat$specs$outDir)
-#      tx <- runClusterProfiler.gsea(rankedGenes, name=cell12, outDir=dat$specs$outDir)
+      tx <- runClusterProfiler.meat(
+               degGenes.up      = dat$deg[[cell12]]$upGenes.minExpr,
+               degGenes.down    = dat$deg[[cell12]]$downGenes.minExpr,
+               fullGeneInfo     = dat$deg[[cell12]]$fc.all,
+               name             = cell12,
+               outDir           = dat$specs$outDir
+            )
    }
 
 }
 
-runClusterProfiler.deg <- function(degGenes, rankedGenes,
-                                   name, outDir) {
+runClusterProfiler.meat <- function(degGenes.up,
+                                    degGenes.down,
+                                    fullGeneInfo,
+                                    name,
+                                    outDir) {
+
+# Parameters
+   nShow      <- 20
+
 # Input: DEG list
 
+   degGenes <- c(degGenes.up, degGenes.down)
    degDF      <- data.frame(SYMBOL = degGenes)
-
-   nShow      <- 20
 
 # Add additional gene identifiers (names, entrezid, KEGG codes, etc)
    tx.entrez  <- bitr(degDF$SYMBOL,
@@ -1406,8 +1549,40 @@ runClusterProfiler.deg <- function(degGenes, rankedGenes,
    degDF      <- merge(degDF, tx.entrez, by="SYMBOL")
    degDF      <- merge(degDF, tx.kegg, by="ENTREZID")
    degDF      <- degDF[,c("SYMBOL","ENTREZID","KEGG")]
-
    tx.entrez <- NULL; tx.kegg <- NULL
+
+
+# Prep ranked gene data frame for GSEA analysis
+   gseaDF     <- data.frame(SYMBOL = fullGeneInfo$gene_name,
+                            GSEArank = fullGeneInfo$pi)
+   gseaDF     <- gseaDF[order(gseaDF$GSEArank,decreasing=TRUE),]
+
+   tx.entrez  <- bitr(gseaDF$SYMBOL,
+                      fromType="SYMBOL",
+                      toType="ENTREZID",
+                      OrgDb="org.Mm.eg.db")
+
+   tx.kegg    <- bitr_kegg(tx.entrez$ENTREZID,
+                           fromType='ncbi-geneid',
+                           toType='kegg',
+                           organism='mmu')
+
+   tx.kegg    <- rename(tx.kegg, c("kegg" = "KEGG",
+                                   "ncbi-geneid" = "ENTREZID"))
+
+   gseaDF      <- merge(gseaDF, tx.entrez, by="SYMBOL")
+   gseaDF      <- merge(gseaDF, tx.kegg, by="ENTREZID")
+   gseaDF      <- gseaDF[,c("SYMBOL","GSEArank","ENTREZID","KEGG")]
+
+   gseaDF <- na.omit(gseaDF)
+   tx <- as.character(gseaDF$ENTREZID)
+   gseaDF <- gseaDF$GSEArank
+   names(gseaDF) <- tx
+   gseaDF <- sort(gseaDF,decreasing=TRUE)
+   tx.entrez <- NULL; tx.kegg <- NULL
+#   return(gseaDF)
+
+
 
    analysisOptions <- list(
       "enrichKEGG"      = list(gene = degDF$KEGG,
@@ -1418,7 +1593,7 @@ runClusterProfiler.deg <- function(degGenes, rankedGenes,
                                OrgDb = org.Mm.eg.db,
                                keyType = 'SYMBOL'),
 
-      "enrichPathway"   = list(degDF$ENTREZID,
+      "enrichPathway"   = list(gene = degDF$ENTREZID,
                                organism = "mouse",
                                pAdjustMethod = "BH",
                                readable=TRUE),
@@ -1439,9 +1614,18 @@ runClusterProfiler.deg <- function(degGenes, rankedGenes,
                                pAdjustMethod = "BH",
                                verbose=FALSE),
 
-      "GSEA"            = list(gene = gseaDF,
+      "gseGO"           = list(geneList = gseaDF,
+                               OrgDB = org.Mm.eg.db,
+                               minGSSize = 10,
                                nPerm = 10000,
-                               pAdjustMethod = "BH")
+                               pAdjustMethod = "BH",
+                               verbose=FALSE),
+
+      "gsePathway"      = list(geneList = gseaDF,
+                               organism = "mouse",
+                               nPerm = 10000,
+                               pAdjustMethod = "BH",
+                               verbose=FALSE)
    )
 
    setReadable.options <- list(
@@ -1490,7 +1674,6 @@ runClusterProfiler.deg <- function(degGenes, rankedGenes,
                                              c("gs_name", "entrez_gene")]),
    
          "MsigDB_H_all"         = list( pvalueCutoff = 1,
-                                        qvalueCutoff = 1,
                                         TERM2GENE = msigdbr(
                                           species="Mus musculus",
                                           category="H")[,
@@ -1541,40 +1724,52 @@ runClusterProfiler.deg <- function(degGenes, rankedGenes,
          "gKEGG1_BHp10" = list(pvalueCutoff=0.1),
          "gKEGG1_all"   = list(pvalueCutoff=1,
                                minGSSize = 1,
-                               maxGSSize = 10000),
+                               maxGSSize = 10000)
       ),
 
-      "gseGO" = list(
-         "gGO1_BP_BHp05"= list(pvalueCutoff = 0.05,
-                               ont = "BP"),
-
-         "gGO1_BP_BHp05"= list(pvalueCutoff = 0.1,
-                               ont = "MF"),
-      ),
-
+#      "gseGO" = list(
+#         "gGO1_BP_BHp05"= list(pvalueCutoff = 0.05,
+#                               ont = "BP"),
+#
+#         "gGO1_BP_BHp05"= list(pvalueCutoff = 0.1,
+#                               ont = "MF")
+#      ),
+#
       "gsePathway" = list(
-         "gReactome1_BHp05" = list(pvalueCutoff = 0.05),
-         "gReactome1_all" = list(pvalueCutoff = 1,
-                                 minGSSize = 1,
-                                 maxGSSize = 10000)
+         "gReactome1_BHp05" = list(pvalueCutoff = 0.05)
+#         "gReactome1_all" = list(pvalueCutoff = 1,
+#                                 minGSSize = 1,
+#                                 maxGSSize = 10000)
       )
    )
+
    analysisList$GSEA <- analysisList$enricher
    names(analysisList$GSEA) <- paste0("g",names(analysisList$GSEA))
+   for (type in names(analysisList$GSEA)) {
+      analysisList$GSEA[[type]]$geneList <- gseaDF
+   }
 
    res.list <- list() ;
    for (analysisType in names(analysisList)) {
       print(paste0("-> analyzing ",analysisType))
-      res.list[[analysisType]] <- list()
 
+      if (grepl("^e",analysisType)) {next;}
+
+      res.list[[analysisType]] <- list()
       for (analysis in names(analysisList[[analysisType]])) {
          print(paste0("  |-> ",analysis))
+
          curOptions <- analysisList[[analysisType]][[analysis]]
          for (option in names(analysisOptions[[analysisType]])) {
             curOptions[[option]] <- analysisOptions[[analysisType]][[option]]
          }
+
+#         print(paste0("about to do.call on ", analysisType," with these options: ",curOptions))
+         print(paste0("about to do.call on ", analysisType))
+         print(paste0(names(curOptions),collapse=", "))
          
          res.list[[analysisType]][[analysis]] <- do.call(analysisType, curOptions)
+         print(paste0("-> got back"))
 
 
          if (analysisType %in% names(setReadable.options)) {
@@ -1601,6 +1796,8 @@ runClusterProfiler.deg <- function(degGenes, rankedGenes,
    for (analysisType in names(res.list)) {
 
       for (analysis in names(res.list[[analysisType]])) {
+
+         if (nrow(res.list[[analysisType]][[analysis]]) == 0) next;
 
          if (1) { #dotplot and emapplot for both DEG and GSEA
             outFile <- paste0(outDir,"/clusterProfiler_plots.",name,".",
@@ -1629,15 +1826,13 @@ runClusterProfiler.deg <- function(degGenes, rankedGenes,
 
          }
    
-         if (grepl("^g", analysisType)) { # GSEA plots
+         if (0 & grepl("^g|G", analysisType)) { # GSEA plots
 
             outFile <- paste0(outDir,"/clusterProfiler_plots.",name,".",
                               analysisType,".",analysis,".gseaplot2.pdf")
             ggplot2::ggsave(filename=outFile,
                                 plot = gseaplot2(
                                  res.list[[analysisType]][[analysis]],
-                                 showCategory=nShow,
-                                 font.size = 8,
                                  title = analysis,
                                  geneSetID = 1:5,
                                  pvalue_table = TRUE,
@@ -1662,11 +1857,5 @@ runClusterProfiler.deg <- function(degGenes, rankedGenes,
    }
 
    return(res.list)
-
-}
-
-
-runClusterProfiler.gsea <- function(rankedGenes) {
-# Input: ranked genes
 
 }
