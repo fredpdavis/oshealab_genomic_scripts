@@ -1087,6 +1087,162 @@ mapColor <- function(x,
    return(cols)
 }
 
+
+
+plotSmale <- function(dat,
+                      pseudocount = 0.01) {
+
+   for (i in 1:nrow(dat$specs$rnaComps)) {
+
+      cell1 <- dat$specs$rnaComps[i,"group1name"]
+      cell2 <- dat$specs$rnaComps[i,"group2name"]
+      cell12 <- paste0(cell1,"_vs_",cell2)
+
+      if (grepl("unstim",cell2)){next;}
+
+      print(paste0("comparing ",cell1," to ",cell2))
+
+
+      groupSamples <- dat$specs$degSamples[[cell12]]
+      samples1   <- groupSamples[[1]]
+      samples2   <- groupSamples[[2]]
+
+      comparisonFC <- data.frame(
+         gene_name      = dat$edat$geneExpr$gene_name,
+         tpm.celltype2  = apply(dat$edat$geneExpr[, paste0("tpm.", samples2)],
+                                   1, mean),
+         tpm.celltype1  = apply(dat$edat$geneExpr[, paste0("tpm.", samples1)],
+                                   1, mean),
+         stringsAsFactors = FALSE
+      )
+      comparisonFC$fc1v2 <- (pseudocount + comparisonFC$tpm.celltype1) /
+                            (pseudocount + comparisonFC$tpm.celltype2)
+
+
+      degGenes <- list()
+      degGenes$down <- comparisonFC[comparisonFC$gene_name %in%
+                                    dat$deg[[cell12]]$upGenes.minExpr,]
+   
+      degGenes$up    <- comparisonFC[comparisonFC$gene_name %in%
+                                     dat$deg[[cell12]]$downGenes.minExpr,]
+
+      for (direction in c("up","down")) {
+   
+         curMat <- degGenes[[direction]]
+
+         hlColor <- "steelBlue2"
+         labDir <- "repressed"
+         if (direction == "down") {
+            curMat$fc1v2 <- 1 / curMat$fc1v2
+            hlColor <- "darkOrange2"
+            labDir <- "induced"
+         }
+#         curMat$rank <- rank(-1 * curMat$fc1v2)
+         curMat$rank <- rank(curMat$fc1v2)
+         curMat$rank <- 100 * curMat$rank / length(curMat$rank)
+
+         fcRange <- range(curMat$fc1v2)
+         fcRange[1] <- 1
+
+
+         tmppngfn <- tempfile()
+         png(file = tmppngfn, height = 3.1, width = 3.1, units = "in", res = 300,
+             family = "ArialMT")
+         par(mar = c(0, 0,0, 0))
+         plot(curMat$rank,
+              curMat$fc1v2,
+              ann=FALSE,axes=FALSE,
+              pch=20, cex=0.5,
+              log="y", col="grey",las=1,
+              xlab = paste0(cell2," (TPM + 1)"),
+              ylab = paste0(cell1," (TPM + 1)"),
+              ylim=fcRange,
+              main="")
+         dev.off()
+         pngbg <- readPNG(tmppngfn)
+         pngbg <- as.raster(pngbg)
+   
+         outFn <- paste0(dat$specs$outDir,"/smalePlot.",cell12,".",direction,
+                         ".pseudcount",pseudocount,".pdf")
+         pdf(outFn, height=3.5,width=3.5)
+      
+         par(mar = c(3.75, 3.75, 0.5, 0.5),
+             mgp = c(2, 0.6, 0),
+             cex = 1, cex.axis = 0.8, cex.lab = 1)
+      
+         plot(curMat$rank,
+              curMat$fc1v2,
+              pch = 20,
+              cex = 0.5,
+              log = "y",
+              type= "n",
+#              axes=FALSE,
+              las = 1,
+              xlab = paste0("percent of ",labDir," genes"),
+              ylab = paste0(cell1," vs ",cell2," (FC)"),
+              ylim=fcRange,
+              main="")
+         lim<-par()
+         rasterImage(pngbg, lim$usr[1], 10^lim$usr[3],
+                            lim$usr[2], 10^lim$usr[4])
+     
+#         axis(1, at=-1 * seq(0,100,20), label=seq(0,100,20))
+#         axis(2,las=1)
+      
+#         outliers <- curMat[curMat$rank <= 10,]
+         outliers <- head(curMat[order(curMat$rank,decreasing=TRUE),],n=10)
+   
+         if (1) {
+   
+         points(outliers$rank,
+                outliers$fc1v2,
+                pch=20,
+                cex=0.5,
+                col= hlColor)
+      
+         lab_x <- c(outliers$rank)
+         lab_y <- c(outliers$fc1v2)
+         
+         lab_text <- c(outliers$gene_name)
+         lab_textadj <- c(rep(1, nrow(outliers)))
+#         lab_textx <- c(rep(nrow(curMat)/2, nrow(outliers)))
+         lab_textx <- c(rep(50, nrow(outliers)))
+         laborder <- order(lab_y)
+         
+#         texty_logo <- ( 0.15 * log(fcRange[2], base = 10))
+         texty_logo <- (log(fcRange[1], base = 10))
+         texty_logo <- (0.15 * log(fcRange[2], base = 10))
+         texty_loginc <- ((0.75 * log(fcRange[2], base = 10)) / length(lab_y))
+
+#         return(fcRange = fcRange,
+#                lab_x = lab_x,
+#                lab_y = lab_y,
+#                outliers=outliers)
+
+      
+         for (j in 1:length(laborder)) {
+            k <- laborder[j]
+            lab_texty <- (10**( (j - 1) * texty_loginc + texty_logo))
+            text(lab_textx[k], lab_texty, lab_text[k], cex = 0.5, adj = lab_textadj[k])
+            segments(lab_textx[k], lab_texty, lab_x[k], lab_y[k], lwd = 1, col = "grey")
+         }
+         legend("topleft",
+                paste0("n=",nrow(curMat)," genes"),
+                text.col=hlColor,
+                cex=0.75, bty="n")
+         }
+      
+      
+         dev.off()
+      }
+   
+   }
+
+}
+
+
+
+
 generic.plotDEGscatters <- function(exprMat, # data frame with expression levels
                                     outFn = "scatter.pdf",
                                     upGenes = c(),   # points to color above diagonal
