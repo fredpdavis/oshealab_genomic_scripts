@@ -743,6 +743,7 @@ plotHmap.deg <- function(dat,
                          degTypes, #if not specified, uses all DEG's
                          sampleList, #used if specified; otherwise uses DEG samples
                          sampleAnnotate, #properties to show as sample annotation
+                         overlayTPM = FALSE,
                          show_rownames = TRUE,
                          clusterCols = FALSE,
                          clusterRows = TRUE,
@@ -824,7 +825,10 @@ plotHmap.deg <- function(dat,
    }
 
    hMat <- as.matrix(hMat)
+   origTPMmat <- hMat
+
    hMat <- (1 + hMat)
+
 
    if (nlMode == "logMean") {
       bottomCap <- -1.5
@@ -878,7 +882,10 @@ plotHmap.deg <- function(dat,
    }
 
    hMat <- na.omit(hMat)
+   origTPMmat <- origTPMmat[rownames(hMat),]
+   origTPMmat <- round(origTPMmat,digits=0)
 
+   plotTitle <- nlMode
    pheatmap.options <- list(hMat,
             show_rownames  = show_rownames,
             show_colnames  = FALSE,
@@ -893,7 +900,13 @@ plotHmap.deg <- function(dat,
             border_color = NA,
             fontsize       = 9,
             fontsize_row   = rowFontSize,
-            main = nlMode)
+            main = plotTitle)
+
+   if (overlayTPM) {
+      pheatmap.options$display_numbers <- origTPMmat
+      pheatmap.options$main <- paste0("color=",pheatmap.options$main,
+                                      "; #=TPM")
+   }
 
    if (missing(repAvg) & !missing(sampleAnnotate)) {
       pheatmap.options$annotation_col <- colAnn
