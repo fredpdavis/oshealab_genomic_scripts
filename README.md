@@ -296,13 +296,13 @@ This step will retrieve the files necessary to process mouse data. Take a look
 inside the script to get a sense of what data is being retrieved.
 
 - By default, YARP uses ENSEMBL release 94. If you want to eventually compare
-your bulk RNA-seq to 10x single cell RNA-seq that you process with cellranger,
-you should instead use the sambe ENSEMBL version. Cellranger version 1, 2, and 3
-use ENSEMBL release 84, 84, and 93, respectively.
+your bulk RNA-seq results to single cell RNA-seq data analyzed by other software
+such as cellranger, you should use the same ENSEMBL versions in both analyses.
+Cellranger versions 1, 2, and 3 use ENSEMBL releases 84, 84, and 93, respectively.
 
-- If necessary, you can specify the ENSEMBL release by editing the following
-three files at the specified lines. Simply change 94 to your desired ENSEMBL
-release.
+- If necessary, you can change the ENSEMBL release used in your analysis by
+editing the following three files at the specified lines. Simply change the
+number 94 to your desired ENSEMBL release.
 
     - `src/r/basicRnaSeqAnalysis.R` line 498: `specs$ensembl_release<- "94"`
     - `src/slurm/prepare_indices.slurm.csh` line 21 `set ENSEMBL_RELEASE="94"`
