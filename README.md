@@ -297,6 +297,19 @@ inside the script to get a sense of what data is being retrieved. If you ever
 want to change genome version, gene annotations, species, etc. you will edit
 this file.
 
+- By default, YARP uses ENSEMBL release 94. If you want to eventually compare
+your bulk RNA-seq to 10x single cell RNA-seq that you process with cellranger,
+you should instead use the sambe ENSEMBL version. Cellranger version 1, 2, and 3
+use ENSEMBL release 84, 84, and 93, respectively.
+
+- If necessary, you can specify the ENSEMBL release by editing the following
+three files at the specified lines. Simply change 94 to your desired ENSEMBL
+release.
+
+    - `src/r/basicRnaSeqAnalysis.R` line 498: `specs$ensembl_release<- "94"`
+    - `src/slurm/prepare_indices.slurm.csh` line 21 `set ENSEMBL_RELEASE="94"`
+    - `src/slurm/process_rnaseq_samples.slurm.csh` line 43 `set ENSEMBL_RELEASE="94"`
+
 - Make a new directory and copy the prepared_indices.slurm.csh script there.
 
 ```

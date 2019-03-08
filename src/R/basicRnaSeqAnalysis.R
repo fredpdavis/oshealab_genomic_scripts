@@ -495,6 +495,11 @@ setSpecs <- function(baseDir){
    specs<-list(baseDir = baseDir)
    print(paste0("basedir = ",baseDir))
 
+   specs$ensembl_release<- "94"
+
+   specs$genomeVer <- "GRCm38"
+   specs$txVer <- paste0(specs$genomeVer,".",specs$ensembl_release)
+
    specs$thresh<-list()
    specs$thresh$exprGenes.minTPM <- 10
    specs$thresh$deGenes.FC <- 1.5
@@ -510,13 +515,13 @@ setSpecs <- function(baseDir){
    specs$outExprFn <- paste0(specs$outDir, "/geneExpr.txt.gz")
 
    specs$transcriptInfo <- read.table(paste0(specs$baseDir,
-      "/data/kallisto_files.GRCm38.94/transcript_info.GRCm38.94.txt"),
+      "/data/kallisto_files.",specs$txVer,"/transcript_info.",specs$txVer,".txt"),
       quote = "", header = TRUE, sep = "\t", as.is = TRUE)
    specs$geneInfo <- unique(specs$transcriptInfo[, c("gene_id", "gene_name")])
 
 
    specs$kallistoBaseDir <- paste0(specs$baseDir,
-      "/results/RNAseq/kallisto.GRCm38.94/")
+      "/results/RNAseq/kallisto.",specs$txVer,"/")
 
    specs$sleuthBaseDir <- paste0(specs$baseDir, "/results/RNAseq/sleuth/")
 
