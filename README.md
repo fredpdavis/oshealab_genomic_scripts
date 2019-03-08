@@ -293,9 +293,7 @@ will pick either CD4 samples without cytokine stimulation OR any CD8 samples.
 ### 4. Retrieve and prepare genome and gene information
 
 This step will retrieve the files necessary to process mouse data. Take a look
-inside the script to get a sense of what data is being retrieved. If you ever
-want to change genome version, gene annotations, species, etc. you will edit
-this file.
+inside the script to get a sense of what data is being retrieved.
 
 - By default, YARP uses ENSEMBL release 94. If you want to eventually compare
 your bulk RNA-seq to 10x single cell RNA-seq that you process with cellranger,
