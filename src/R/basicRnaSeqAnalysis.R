@@ -109,8 +109,13 @@ makeFigures <- function(dat, figList) {
 
 # DEG scatterplots
    if (any(c("all","3") %in% figList)) {
-      print("Plot: DEG scatterplot and fold change cumulative distribution plots")
+      print("Plot: DEG scatterplot")
       plotDEGscatters(dat)
+   }
+
+   if (any(c("all","4") %in% figList)) {
+      print("Plot: fold change cumulative distribution plots")
+      plotSmale(dat)
    }
 
 # GEO supp expression table
@@ -623,9 +628,9 @@ makeCorrHeatmap <- function(dat,
          }
       }
       colAnn$sampleNames <- NULL
+      print("TEST: SampleAnnotates")
+      print(colAnn)
    }
-   print("TEST: SampleAnnotates")
-   print(colAnn)
 
    pheatmap.options <- list(corMat, fontsize_row = 4, fontsize_col = 4,
             main = "Pearson correlation of log2(TPM + 1)",
@@ -1107,8 +1112,7 @@ mapColor <- function(x,
 
 
 
-plotSmale <- function(dat,
-                      pseudocount = 0.01) {
+plotSmale <- function(dat, pseudocount = 1) {
 
    for (i in 1:nrow(dat$specs$rnaComps)) {
 
@@ -1196,7 +1200,7 @@ plotSmale <- function(dat,
               type= "n",
 #              axes=FALSE,
               las = 1,
-              xlab = paste0("percent of ",labDir," genes"),
+              xlab = paste0("Percentile of ",labDir," genes"),
               ylab = paste0(cell1," vs ",cell2," (FC)"),
               ylim=fcRange,
               main="")
