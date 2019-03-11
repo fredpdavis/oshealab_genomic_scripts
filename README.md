@@ -165,14 +165,14 @@ cd /data/davisfp/projects
 - download this package
 
 ```
-git clone https://github.com/fredpdavis/oshealab_genomic_scripts.git
+git clone https://github.com/fredpdavis/yarp.git
 ```
 
 - rename to your project name, cytokineX in this example. __NOTE: REPLACE
 cytokineX with your project name__
 
 ```
-mv oshealab_genomic_scripts cytokineX
+mv yarp cytokineX
 ```
 
 - change directories to this project.
