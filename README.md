@@ -403,6 +403,29 @@ sbatch process_rnaseq_samples.slurm.csh
 
 - Browse the results directory to see the files that were generated:
 
+#### OPTIONAL: Visualize genome tracks
+
+- If you'd like, you can visualize the STAR alignments in a genome browser.
+
+- Install [IGV](https://software.broadinstitute.org/software/igv/download) on
+  your local machine.
+
+- Secury copy the bigWig files from the STAR results directory onto your local
+  machine's Desktop:
+
+```
+scp -r biowulf:'data/projects/cytokineX/results/RNAseq/star*/*/*bw' ~/Desktop
+```
+
+- Start IGV.
+
+- Select the mouse genome (mouse mm10)
+
+- Load the bigwig files in IGV.
+
+- Make sure you use the same scale for all samples.
+
+
 ### 6. Create figures and tables
 
 Now that the samples have been individually processed, we will next make some
@@ -515,7 +538,7 @@ plotHmap.deg(dat, repAvg = list(unstim = c("unstim_rep1", "unstim_rep2"), gamma=
 makeVarGeneHeatmap(dat,sampleAnnotate=c("cytokineStim"))
 ```
 
-- To view the figures, secury copy (scp) the whole directory to your local machine's Desktop. Open a new terminal window on your local machine and type:
+- To view the figures, secure copy (scp) the whole directory to your local machine's Desktop. Open a new terminal window on your local machine and type:
 
 ```
 scp -r biowulf:data/projects/cytokineX/analysis/basicFigures ~/Desktop
