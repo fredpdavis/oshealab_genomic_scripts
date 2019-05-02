@@ -12,7 +12,6 @@ module load kallisto/0.44.0
 module load STAR/2.5.4a
 module load ucsc
 
-#set BASEDIR="/data/davisfp/projects/oshealab_genomic_scripts"
 set BASEDIR="/data/davisfp/projects/cytokineX"
 set NUMCPU=8
 
