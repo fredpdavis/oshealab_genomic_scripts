@@ -780,6 +780,7 @@ makeVarGeneHeatmap <- function(dat,
 plotHmap.deg <- function(dat,
                          nlMode = "logMean",
                          geneList, #used if specified; otherwise picks DEGs
+                         geneList.type = "gene_name", # or gene_id
                          degTypes, #if not specified, uses all DEG's
                          sampleList, #used if specified; otherwise uses DEG samples
                          sampleAnnotate, #properties to show as sample annotation
@@ -810,6 +811,7 @@ plotHmap.deg <- function(dat,
 #          else, use all DEG compared samples
 
    if (missing(geneList)) {
+      geneList.type <- "gene_id"
       if (missing(degTypes)) {
          degTypes <- names(dat$specs$degSamples)
       }
@@ -819,6 +821,16 @@ plotHmap.deg <- function(dat,
                                  dat$deg[[degType]]$downGenes.minExpr)
       }
       geneList <- unique(geneList)
+   } else {
+      if (geneList.type == "gene_name") {
+         geneList.type <- "gene_id"
+         geneList.orig <- geneList
+         geneList <- c()
+         for (gene in geneList.orig) {
+            geneList <- c(geneList,
+                          dat$specs$geneInfo$gene_id[dat$specs$geneInfo$gene_name == gene])
+         }
+      }
    }
 
    if (missing(sampleList)) {
@@ -843,7 +855,7 @@ plotHmap.deg <- function(dat,
    print(geneList)
 
    hMat <- as.data.frame(origExpr[
-      match(geneList[geneList %in% origExpr$gene_name], origExpr$gene_name),
+      match(geneList[geneList %in% origExpr$gene_id], origExpr$gene_id),
       c("gene_name", "gene_id", tpmCols)])
    rownames(hMat) <- paste0(hMat$gene_name, ":", hMat$gene_id)
 
