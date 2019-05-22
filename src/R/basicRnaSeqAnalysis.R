@@ -612,9 +612,16 @@ setSpecs <- function(baseDir){
 
 makeCorrHeatmap <- function(dat,
                             sampleAnnotate, #properties to show as sample annotation
+                            sampleNames, #sampleName to include in plot?
+                            height = 5,
+                            width = 6,
                             figName = "corrHeatmap") {
 
-   eMat <- dat$edat$geneExpr[,paste0("tpm.",dat$specs$rnaSamples$sampleName)]
+   if (missing(sampleNames)) {
+      sampleNames <- dat$specs$rnaSamples$sampleName
+   }
+
+   eMat <- dat$edat$geneExpr[,paste0("tpm.",sampleNames)]
 
    eMat <- eMat[apply(eMat,1,max) >= dat$specs$thresh$exprGenes.minTPM,]
 
@@ -663,8 +670,8 @@ makeCorrHeatmap <- function(dat,
    pdf(paste0(dat$specs$outDir, "/",
            figName, "_correlation_heatmap.pdf"),
        onefile = FALSE,
-       height = 5,
-       width  = 6)
+       height = height ,
+       width  = width)
    do.call(pheatmap, pheatmap.options)
    dev.off()
 }
