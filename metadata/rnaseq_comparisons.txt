@@ -1,7 +1,0 @@
-group1name	group1criteria	group2name	group2criteria
-WT.unstim	cytokineStim=US_WT	Stat4KO.unstim	cytokineStim=US_KO
-WT.unstim	cytokineStim=US_WT	WT.IL18	cytokineStim=18_WT
-WT.unstim	cytokineStim=US_WT	WT.IL12	cytokineStim=12_WT
-WT.unstim	cytokineStim=US_WT	WT.IL12_18	cytokineStim=12_18_WT
-WT.IL18	cytokineStim=18_WT	WT.IL12_18	cytokineStim=12_18_WT
-WT.IL12	cytokineStim=12_WT	WT.IL12_18	cytokineStim=12_18_WT

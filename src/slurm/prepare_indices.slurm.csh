@@ -12,7 +12,6 @@ module load kallisto/0.44.0
 module load STAR/2.5.4a
 module load ucsc
 
-#set BASEDIR="/data/davisfp/projects/oshealab_genomic_scripts"
 set BASEDIR="/data/davisfp/projects/cytokineX"
 set NUMCPU=8
 
@@ -94,7 +93,16 @@ if (! -s $KALLISTODIR) then
 
    zcat $ORIG_GTF_FN > $WITHERCC_GTF_FN
    cat $ERCCGTF >> $WITHERCC_GTF_FN
-   perl $BASEDIR/src/perl/GTF2transcript_info.pl < $WITHERCC_GTF_FN > $TXINFO_FN
+
+# FPD190314_1215 - changed transcript info builder strategy
+# - some transcripts in FA file (esp patched mouse chromosomes) have no GTF entry
+# - instead of gtf2info now using actual FASTA file
+
+#   perl $BASEDIR/src/perl/GTF2transcript_info.pl < $WITHERCC_GTF_FN > $TXINFO_FN
+
+   gzcat $TRANSCRIPTFA |perl $BASEDIR/src/perl/fasta2transcript_info.pl > $TXINFO_FN
+   cat $ERCCFA |perl $BASEDIR/src/perl/fasta2transcript_info.pl | sed 1d >> $TXINFO_FN
+
 
    cd $curdir
 endif

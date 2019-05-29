@@ -165,14 +165,14 @@ cd /data/davisfp/projects
 - download this package
 
 ```
-git clone https://github.com/fredpdavis/oshealab_genomic_scripts.git
+git clone https://github.com/fredpdavis/yarp.git
 ```
 
 - rename to your project name, cytokineX in this example. __NOTE: REPLACE
 cytokineX with your project name__
 
 ```
-mv oshealab_genomic_scripts cytokineX
+mv yarp cytokineX
 ```
 
 - change directories to this project.
@@ -293,9 +293,20 @@ will pick either CD4 samples without cytokine stimulation OR any CD8 samples.
 ### 4. Retrieve and prepare genome and gene information
 
 This step will retrieve the files necessary to process mouse data. Take a look
-inside the script to get a sense of what data is being retrieved. If you ever
-want to change genome version, gene annotations, species, etc. you will edit
-this file.
+inside the script to get a sense of what data is being retrieved.
+
+- By default, YARP uses ENSEMBL release 94. If you want to eventually compare
+your bulk RNA-seq results to single cell RNA-seq data analyzed by other software
+such as cellranger, you should use the same ENSEMBL versions in both analyses.
+Cellranger versions 1, 2, and 3 use ENSEMBL releases 84, 84, and 93, respectively.
+
+- If necessary, you can change the ENSEMBL release used in your analysis by
+editing the following three files at the specified lines. Simply change the
+number 94 to your desired ENSEMBL release.
+
+    - `src/r/basicRnaSeqAnalysis.R` line 498: `specs$ensembl_release<- "94"`
+    - `src/slurm/prepare_indices.slurm.csh` line 21 `set ENSEMBL_RELEASE="94"`
+    - `src/slurm/process_rnaseq_samples.slurm.csh` line 43 `set ENSEMBL_RELEASE="94"`
 
 - Make a new directory and copy the prepared_indices.slurm.csh script there.
 
@@ -391,6 +402,29 @@ sbatch process_rnaseq_samples.slurm.csh
 - Check job status with `squeue`
 
 - Browse the results directory to see the files that were generated:
+
+#### OPTIONAL: Visualize genome tracks
+
+- If you'd like, you can visualize the STAR alignments in a genome browser.
+
+- Install [IGV](https://software.broadinstitute.org/software/igv/download) on
+  your local machine.
+
+- Secury copy the bigWig files from the STAR results directory onto your local
+  machine's Desktop:
+
+```
+scp -r biowulf:'data/projects/cytokineX/results/RNAseq/star*/*/*bw' ~/Desktop
+```
+
+- Start IGV.
+
+- Select the mouse genome (mouse mm10)
+
+- Load the bigwig files in IGV.
+
+- Make sure you use the same scale for all samples.
+
 
 ### 6. Create figures and tables
 
@@ -504,7 +538,7 @@ plotHmap.deg(dat, repAvg = list(unstim = c("unstim_rep1", "unstim_rep2"), gamma=
 makeVarGeneHeatmap(dat,sampleAnnotate=c("cytokineStim"))
 ```
 
-- To view the figures, secury copy (scp) the whole directory to your local machine's Desktop. Open a new terminal window on your local machine and type:
+- To view the figures, secure copy (scp) the whole directory to your local machine's Desktop. Open a new terminal window on your local machine and type:
 
 ```
 scp -r biowulf:data/projects/cytokineX/analysis/basicFigures ~/Desktop

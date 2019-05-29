@@ -12,7 +12,7 @@
 set NUMCPU=8
 set scratchdir="/lscratch/$SLURM_JOBID"
 
-set BASEDIR="/data/davisfp/projects/oshealab_genomic_scripts"
+set BASEDIR="/data/davisfp/projects/cytokineX"
 set SAMPLEINFO_FN="$BASEDIR/metadata/rnaseq_samples.txt"
 set SAMPLE_OPTION=""
 
