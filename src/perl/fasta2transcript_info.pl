@@ -13,7 +13,7 @@ sub main {
    my $specs = {} ;
    if ($#ARGV >= 0) {$specs->{biotype} = $ARGV[0];}
 
-   print join("\t", qw/transcript_id gene_id transcript_name gene_name gene_biotype/)."\n";
+   print join("\t", qw/transcript_id gene_id transcript_name gene_name gene_biotype chr start end/)."\n";
    while (my $line = <STDIN>) {
       if ($line !~ /^\>/) {next;}
       chomp $line;
@@ -22,7 +22,7 @@ sub main {
 
 #>ENSMUST00000177564.1 cdna chromosome:GRCm38:14:54122226:54122241:1 gene:ENSMUSG00000096176.1 gene_biotype:TR_D_gene transcript_biotype:TR_D_gene gene_symbol:Trdd2 description:T cell receptor delta diversity 2 [Source:MGI Symbol;Acc:MGI:4439546]
 
-      my ($txid, $geneid, $txname, $genename, $biotype) ;
+      my ($txid, $geneid, $txname, $genename, $biotype, $chr, $start, $end) ;
       if ($line =~ /^ENS/) {
          $txid = $line ;
          $txid =~ s/[ \t].*// ;
@@ -32,18 +32,26 @@ sub main {
          ($genename) = ($line =~ /gene_symbol:([^ ]*)/) ;
          ($biotype) = ($line =~ /gene_biotype:([^ ]*)/) ;
 
+         my @t = split(' ', $line) ;
+         (undef, undef, $chr, $start, $end,undef) = split(':', $t[2]) ;
+#         die "searching in $t[2] found $chr $start $end\n";
+
+
       } else {
          $txid = $line ;
          $txid =~ s/[ \t].*// ;
          ($txname, $geneid, $genename) = ($txid, $txid, $txid) ;
          $biotype = "unk" ;
+         $chr = '';
+         $start = '';
+         $end = '' ;
       }
 
       if (exists $specs->{biotype}) {
          $biotype = $specs->{biotype} ;
       }
 
-      print join("\t", $txid, $geneid, $txname, $genename, $biotype)."\n";
+      print join("\t", $txid, $geneid, $txname, $genename, $biotype, $chr, $start, $end)."\n";
    }
 
 }
